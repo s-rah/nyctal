@@ -62,24 +62,28 @@ func (s *Seat) ProcessPointerEvent(wsc *WaylandServerConn, ev model.PointerEvent
 		if is == nil {
 			if s.pointerFocus != nil {
 				s.serial += 1
-				// wsc.SendMessage(NewPacketBuilder(s.mouse, 0x01).
-				// 	WithUint(s.serial).
-				// 	WithUint(s.pointerFocus.id).Build())
+				utils.Debug(fmt.Sprintf("wl_pointer#%d", s.mouse), fmt.Sprintf("leave %d ", s.pointerFocus.surface.id))
+				wsc.SendMessage(NewPacketBuilder(s.mouse, 0x01).
+					WithUint(s.serial).
+					WithUint(s.pointerFocus.surface.id).Build())
 				s.pointerFocus = nil
+				s.pointerFocus.hasPointer = false
 			}
-			// utils.Debug("seat", "intersect with nothing after processing pointer event")
 			return
 		}
 
 		if s.pointerFocus == nil {
 			s.pointerFocus = is
+			s.pointerFocus.hasPointer = false
 		} else if is.id != s.pointerFocus.id {
-			// wsc.SendMessage(NewPacketBuilder(s.mouse, 0x01).
-			// 	WithBytes([]byte{0, 0, 0, 0}).
-			// 	WithUint(s.pointerFocus.id).Build())
+			s.serial += 1
+			utils.Debug(fmt.Sprintf("wl_pointer#%d", s.mouse), fmt.Sprintf("leave %d ", s.pointerFocus.surface.id))
+			wsc.SendMessage(NewPacketBuilder(s.mouse, 0x01).
+				WithUint(s.serial).
+				WithUint(s.pointerFocus.surface.id).Build())
+			utils.Debug(fmt.Sprintf("wl_pointer#%d", s.mouse), fmt.Sprintf("leave %d ", s.pointerFocus.surface.id))
 			s.pointerFocus.hasPointer = false
 			s.pointerFocus = is
-			utils.Debug(fmt.Sprintf("wl_pointer#%d", s.mouse), fmt.Sprintf("leave %d ", s.pointerFocus.id))
 		}
 	}
 	top := s.pointerFocus
@@ -87,18 +91,9 @@ func (s *Seat) ProcessPointerEvent(wsc *WaylandServerConn, ev model.PointerEvent
 
 		if ev.Move != nil {
 			// these coordinates are in top_level local coords, we need to
-			// convert them
+			// convert them to surface level
 			ev.Move.MX -= float32(top.RelativeOffset().X)
 			ev.Move.MY -= float32(top.RelativeOffset().Y)
-
-			//utils.Debug("seat", fmt.Sprintf("converting to surface local coordinates...%v", ev.Move))
-
-			// if pointer, err := registry.Get(s.mouse); err == nil {
-			// 	if pointerObj, ok := pointer.(*Pointer); ok {
-			// 	//	pointerObj.local = image.Pt(int(ev.Move.MX), int(ev.Move.MY))
-			// 		//	fmt.Printf("setting pointer... %v", pointerObj.local)
-			// 	}
-			// }
 		}
 
 		if s.mouse != 0 {
@@ -137,8 +132,7 @@ func (s *Seat) ProcessPointerEvent(wsc *WaylandServerConn, ev model.PointerEvent
 					WithUint(ev.Move.Time).
 					WithFixed(ev.Move.MX).
 					WithFixed(ev.Move.MY).Build())
-
-				utils.Debug(fmt.Sprintf("wl_pointer#%d", s.mouse), "motion")
+				//utils.Debug(fmt.Sprintf("wl_pointer#%d", s.mouse), "motion")
 			}
 
 			if ev.Button != nil {
@@ -148,7 +142,7 @@ func (s *Seat) ProcessPointerEvent(wsc *WaylandServerConn, ev model.PointerEvent
 					WithUint(ev.Button.Time).
 					WithUint(ev.Button.Button).
 					WithUint(ev.Button.State).Build())
-				utils.Debug(fmt.Sprintf("wl_pointer#%d", s.mouse), "button")
+				//utils.Debug(fmt.Sprintf("wl_pointer#%d", s.mouse), "button")
 			}
 
 			if ev.Axis != nil {
@@ -156,8 +150,7 @@ func (s *Seat) ProcessPointerEvent(wsc *WaylandServerConn, ev model.PointerEvent
 					WithUint(ev.Axis.Time).
 					WithUint(ev.Axis.Axis).
 					WithFixed(ev.Axis.Value).Build())
-				utils.Debug(fmt.Sprintf("wl_pointer#%d", s.mouse), "axis")
-
+				//utils.Debug(fmt.Sprintf("wl_pointer#%d", s.mouse), "axis")
 			}
 			wsc.SendMessage(NewPacketBuilder(s.mouse, 0x05).Build())
 			//	utils.Debug(fmt.Sprintf("wl_pointer#%d", s.mouse), "frame")
