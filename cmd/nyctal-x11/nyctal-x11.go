@@ -156,7 +156,7 @@ func main() {
 
 	wspace = workspace.NewWorkspace(1280, 1024)
 
-	e := create_window("orix", 128, 128)
+	e := create_window("nyctal-x11", 128, 128)
 
 	if e != nil {
 		panic(e)
@@ -172,10 +172,10 @@ func main() {
 	C.mfb_set_resize_callback(window, (C.mfb_resize_func)(C.ResizeWindow))
 
 	// reset UDS
-	os.RemoveAll("/tmp/ori/")
-	os.Mkdir("/tmp/ori/", 0700)
+	os.RemoveAll("/tmp/nyctal/")
+	os.Mkdir("/tmp/nyctal/", 0700)
 
-	ws, err := wayland.NewServer("/tmp/ori/ori-0", wspace)
+	ws, err := wayland.NewServer("/tmp/nyctal/nyctal-0", wspace)
 	if err != nil {
 		fmt.Printf("[error] %s\n", err)
 		os.Exit(1)
@@ -183,7 +183,7 @@ func main() {
 	go ws.Listen()
 	wspace.ProcessFocus()
 
-	fmt.Printf("Starting ORI...\n")
+	fmt.Printf("Starting nyctal-x11...\n")
 	//lastFrame := time.Now()
 	// this is the minifb loop
 	for C.mfb_wait_sync(window) {

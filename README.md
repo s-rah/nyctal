@@ -25,6 +25,9 @@ There are currently two example applications that can be used to try out Nyctal:
 1. [cmd/nyctal-x11](cmd/nyctal-x11) - hosts a nyctal compositor in an X11 window (depends on building minifb, see instructions in the linked folder).
 2. [cmd/nyctal-dri](cmd/nyctal-dri) - requires direct access to `input` and `video` devices (see instructions in the linked folder).
 
+Ensure that any apps are run in an environment setting `XDG_RUNTIME_DIR=/tmp/nyctal/` and `WAYLAND_DISPLAY=nyctal-0`
+
+
 ### Applications that Work with Nyctal
 
 Nyctal can currently interact and render a wide range of applications, some that I've tested include:
@@ -36,6 +39,7 @@ Nyctal can currently interact and render a wide range of applications, some that
 Nyctal will currently fail to interact with anything that expects to be able to use the dmabuf extension (so flags like `LIBGL_ALWAYS_SOFTWARE=1` and `__GLX_VENDOR_LIBRARY_NAME=mesa` are needed when running applications to force software rendering)
 
 Nyctal also doesn't support extensions that most video apps (like mpv) need.
+ 
 
 ## Does it support <protocol>?
 

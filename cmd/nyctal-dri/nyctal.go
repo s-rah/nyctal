@@ -113,7 +113,7 @@ func main() {
 	rm := DrmInit()
 	if rm == nil {
 		fmt.Printf("[error] could not initialize drm rendering\n")
-		output = NewImageOutput("ori-", time.Second*5)
+		output = NewImageOutput("nyctal-", time.Second*5)
 	} else {
 		output = rm
 		width, height := rm.Stats()
@@ -122,10 +122,10 @@ func main() {
 	}
 
 	// reset UDS
-	os.RemoveAll("/tmp/ori/")
-	os.Mkdir("/tmp/ori/", 0700)
+	os.RemoveAll("/tmp/nyctal/")
+	os.Mkdir("/tmp/nyctal/", 0700)
 
-	ws, err := wayland.NewServer("/tmp/ori/ori-0", wspace)
+	ws, err := wayland.NewServer("/tmp/nyctal/nyctal-0", wspace)
 	if err != nil {
 		fmt.Printf("[error] %s\n", err)
 		os.Exit(1)
@@ -135,10 +135,9 @@ func main() {
 	defer closeInput()
 	wspace.ProcessFocus()
 
-	fmt.Printf("Starting ORI...\n")
+	fmt.Printf("Starting Nyctal...\n")
 	lastFrame := time.Now()
-	start := time.Now()
-	start = start.Add(-time.Second * 10)
+
 	for {
 		// time check is here to prevent spamming the workspace render buffer (which may attempt to e.g. reconfigure windwows)
 		// there is no point in attempting to generate frames any faster than 200fps
