@@ -1,0 +1,67 @@
+diff --git a/src/x11/X11MiniFB.c b/src/x11/X11MiniFB.c
+index d1d5c34..8549400 100644
+--- a/src/x11/X11MiniFB.c
++++ b/src/x11/X11MiniFB.c
+@@ -74,6 +74,7 @@ mfb_open_ex(const char *title, unsigned width, unsigned height, unsigned flags)
+ 
+     Window defaultRootWindow = DefaultRootWindow(window_data_x11->display);
+ 
++
+     for (i = 0; i < formatCount; ++i)
+     {
+         if (depth == formats[i].depth)
+@@ -203,6 +204,20 @@ mfb_open_ex(const char *title, unsigned width, unsigned height, unsigned flags)
+     XSetWMNormalHints(window_data_x11->display, window_data_x11->window, &sizeHints);
+     XClearWindow(window_data_x11->display, window_data_x11->window);
+     XMapRaised(window_data_x11->display, window_data_x11->window);
++
++
++	Cursor invisibleCursor;
++	Pixmap bitmapNoData;
++	XColor black;
++	static char noData[] = { 0,0,0,0,0,0,0,0 };
++	black.red = black.green = black.blue = 0;
++
++	bitmapNoData = XCreateBitmapFromData(window_data_x11->display, window_data_x11->window, noData, 8, 8);
++	invisibleCursor = XCreatePixmapCursor(window_data_x11->display, bitmapNoData, bitmapNoData, &black, &black, 0, 0);
++	XDefineCursor(window_data_x11->display,window_data_x11->window, invisibleCursor);
++	XFreeCursor(window_data_x11->display, invisibleCursor);
++	XFreePixmap(window_data_x11->display, bitmapNoData);
++
+     XFlush(window_data_x11->display);
+ 
+     window_data_x11->gc = DefaultGC(window_data_x11->display, window_data_x11->screen);
+@@ -475,6 +490,8 @@ mfb_update_ex(struct mfb_window *window, void *buffer, unsigned width, unsigned
+         window_data_x11->image->data = (char *) buffer;
+         XPutImage(window_data_x11->display, window_data_x11->window, window_data_x11->gc, window_data_x11->image, 0, 0, window_data->dst_offset_x, window_data->dst_offset_y, window_data->dst_width, window_data->dst_height);
+     }
++
++
+     XFlush(window_data_x11->display);
+ 
+ #else
+@@ -503,6 +520,7 @@ mfb_update_events(struct mfb_window *window) {
+     }
+ 
+     SWindowData_X11 *window_data_x11 = (SWindowData_X11 *) window_data->specific;
++
+     XFlush(window_data_x11->display);
+     processEvents(window_data);
+ 
+@@ -531,6 +549,7 @@ mfb_wait_sync(struct mfb_window *window) {
+     }
+ 
+     SWindowData_X11 *window_data_x11 = (SWindowData_X11 *) window_data->specific;
++
+     XFlush(window_data_x11->display);
+     XEvent      event;
+     double      current;
+@@ -786,7 +805,7 @@ translate_key(int scancode) {
+     if (scancode < 0 || scancode > 255)
+         return KB_KEY_UNKNOWN;
+ 
+-    return g_keycodes[scancode];
++    return scancode; //g_keycodes[scancode];
+ }
+ 
+ ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

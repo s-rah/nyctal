@@ -1,0 +1,7 @@
+*.svg
+*.jpeg
+*.prof
+cmd/nyctal-x11/minifb
+cmd/nyctal-x11/nyctal-x11
+cmd/nyctal-dri/nyctal
+todo
