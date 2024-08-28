@@ -16,6 +16,9 @@ type Surface struct {
 	attached bool
 	pending  *Buffer
 
+	commitedInputRegion *Region
+	pendingInputRegion  *Region
+
 	parent   uint32
 	children []uint32
 	cached   *model.BGRA
@@ -147,7 +150,24 @@ func (u *Surface) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage) 
 		return nil
 	case 4:
 		//fmt.Printf("set input region\n")
-		return nil
+		regionId := NewUintField()
+		if err := ParsePacketStructure(packet.Data, regionId); err != nil {
+			return err
+		}
+		utils.Debug(fmt.Sprintf("surface#%d", u.id), fmt.Sprintf("set_input_region#%d", *regionId))
+		rid := uint32(*regionId)
+		if rid == 0 {
+			u.pendingInputRegion = nil
+			return nil
+		} else {
+			if obj, err := wsc.registry.Get(rid); err == nil {
+				if region, ok := obj.(*Region); ok {
+					u.pendingInputRegion = region
+					return nil
+				}
+			}
+		}
+		return fmt.Errorf("unknown region reference")
 	case 5:
 		// we ignore all opauqe region hints...
 		return nil
@@ -155,6 +175,9 @@ func (u *Surface) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage) 
 		//fmt.Printf("set buffer scale\n")
 		return nil
 	case 6:
+
+		u.commitedInputRegion = u.pendingInputRegion
+
 		// received create pool message...
 		if u.pending != nil {
 

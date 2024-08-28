@@ -33,36 +33,41 @@ func (s *Seat) ProcessKeyboardEvent(ev model.KeyboardEvent) {
 	}
 }
 
+func checkIntersect(point image.Point, surface *XDG_Surface) *XDG_Surface {
+
+	if surface == nil {
+		return nil
+	}
+
+	var highestIntersect *XDG_Surface
+	if surface.popup != nil {
+		highestIntersect = checkIntersect(point, surface.popup.surface)
+	}
+
+	if highestIntersect == nil {
+		if surface.Intersects(point) {
+			return surface
+		}
+	}
+	return highestIntersect
+}
+
 func (s *Seat) ProcessPointerEvent(wsc *WaylandServerConn, ev model.PointerEvent, surface *XDG_Surface) {
 
 	if s.mouse != 0 && ev.Move != nil {
-		var is *XDG_Surface
 
-		is = surface
-		cpopup := surface.popup
-
-		for cpopup != nil {
-			if cpopup.surface.Intersects(image.Pt(int(ev.Move.MX), int(ev.Move.MY))) {
-				is = cpopup.surface
-			}
-			cpopup = cpopup.surface.popup
-		}
-
-		// for _, surface := range s.surfaceStack.Inner() {
-		// 	if surface.Intersects(image.Pt(int(ev.Move.MX), int(ev.Move.MY))) {
-		// 		is = surface
-		// 	}
-		// }
+		is := checkIntersect(image.Pt(int(ev.Move.MX), int(ev.Move.MY)), surface)
 
 		// we intersected with nothing
-		// this shouldn't ever happen
 		if is == nil {
 			if s.pointerFocus != nil {
-				wsc.SendMessage(NewPacketBuilder(s.mouse, 0x01).
-					WithBytes([]byte{0, 0, 0, 0}).
-					WithUint(s.pointerFocus.id).Build())
+				s.serial += 1
+				// wsc.SendMessage(NewPacketBuilder(s.mouse, 0x01).
+				// 	WithUint(s.serial).
+				// 	WithUint(s.pointerFocus.id).Build())
+				s.pointerFocus = nil
 			}
-			utils.Debug("seat", "intersect with nothing after processing pointer event")
+			// utils.Debug("seat", "intersect with nothing after processing pointer event")
 			return
 		}
 

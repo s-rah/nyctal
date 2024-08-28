@@ -25,7 +25,7 @@ func (u *Compositor) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessag
 		if err := ParsePacketStructure(packet.Data, newId); err != nil {
 			return err
 		}
-		wsc.registry.New(uint32(*newId), &Region{id: uint32(*newId)})
+		wsc.registry.New(uint32(*newId), NewRegion(uint32(*newId)))
 		return nil
 	default:
 		return fmt.Errorf("unknown opcode called on unbound object: %v", packet.Opcode)

@@ -48,13 +48,36 @@ func (xp *XDG_Surface) Intersects(pointer image.Point) bool {
 		return false // un undefed surface cannot be intersected
 	}
 	if xp.positioner == nil {
-		return true // we are not a popup - by definiton the surface intersects all
+		if xp.surface.commitedInputRegion == nil {
+			return true
+		} else {
+			inArea, inRegion := xp.surface.commitedInputRegion.Intersects(pointer)
+			if inArea && inRegion {
+				return true
+			} else if !inArea {
+				return true
+			}
+		}
+		return false
 	}
+
 	tl := xp.RelativeOffset()
 	size := xp.positioner.size
 	bounds := image.Rect(tl.X, tl.Y, tl.X+size.Dx(), tl.Y+size.Dy())
-	if intersects, _, _ := utils.IntersectsRect(pointer.X, pointer.Y, bounds); intersects {
-		return true
+
+	if pointer.In(bounds) {
+		// we are inside this popup
+		surfaceLocal := pointer.Add(tl)
+		if xp.surface.commitedInputRegion == nil {
+			return true
+		} else {
+			inArea, inRegion := xp.surface.commitedInputRegion.Intersects(surfaceLocal)
+			if inArea && inRegion {
+				return true
+			} else if !inArea {
+				return true
+			}
+		}
 	}
 	return false
 }
