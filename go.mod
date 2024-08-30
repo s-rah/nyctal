@@ -1,4 +1,4 @@
-module nyctal
+module github.com/s-rah/nyctal
 
 go 1.22.4
 
