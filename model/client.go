@@ -1,7 +1,5 @@
 package model
 
-import ()
-
 type PointerEvent struct {
 	Move   *PointerMoveEvent
 	Button *PointerButtonEvent
@@ -42,22 +40,25 @@ type Buffer struct {
 	Format Format
 }
 
-type Client interface {
-	Parent() Client
-	AddChild(id int, client Client) int
-	RemoveChild(id int)
-	RemoveChildren(parent int)
-	GetChild(id int) Client
-	Resize(width int, height int)
-	Buffer() *BGRA
-
+type TopLevelWindow interface {
+	Index() GlobalIdx
+	Parent() GlobalIdx
+	Buffer(img *BGRA, width int, height int)
 	ProcessKeyboardEvent(ev KeyboardEvent)
 	ProcessPointerEvent(ev PointerEvent) bool
-
 	HandlePointerLeave()
-
-	ProcessFocus()
-	ProcessUnFocus()
-
 	AckFrame()
+}
+
+type Workspace interface {
+	AddTopLevel(TopLevelWindow)
+	RemoveTopLevel(GlobalIdx)
+	RemoveAllWithParent(GlobalIdx)
+	GetTopLevel(GlobalIdx) TopLevelWindow
+
+	Buffer(img *BGRA, width int, height int)
+
+	ProcessKeyboardEvent(pointer Pointer, kb Keyboard, ev KeyboardEvent)
+	ProcessPointerEvent(pointer Pointer, kb Keyboard, ev PointerEvent) bool
+	HandlePointerLeave()
 }

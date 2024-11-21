@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"image"
 
+	"nyctal/model"
 	"nyctal/utils"
 )
 
 type XDG_Surface struct {
-	id   uint32 // client given id
-	uniq int    // compositor unique id
+	id   uint32          // client given id
+	uniq model.GlobalIdx // compositor unique id
 
 	server         *WaylandServer
 	surface        *Surface
@@ -24,13 +25,6 @@ type XDG_Surface struct {
 
 	configuring bool
 	serial      uint32
-}
-
-func (u *XDG_Surface) GetParentUniq() int {
-	if u.uniq != 0 {
-		return u.uniq
-	}
-	return u.parent.GetParentUniq()
 }
 
 func (u *XDG_Surface) RelativeOffset() image.Point {
@@ -119,7 +113,7 @@ func (u *XDG_Surface) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessa
 	switch packet.Opcode {
 	case 0:
 		wsc.registry.Destroy(u.id)
-		u.server.workspace.RemoveChild(u.uniq)
+		u.server.workspace.RemoveTopLevel(u.uniq)
 		return nil
 	case 1:
 		new_id := NewUintField()
@@ -131,7 +125,8 @@ func (u *XDG_Surface) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessa
 		wsc.registry.New(uint32(*new_id), topLevel)
 		u.topLevel = topLevel
 
-		u.uniq = u.server.workspace.AddChild(wsc.id, NewWaylandClient(wsc.id, wsc, u))
+		u.uniq = model.GlobalIdx(wsc.registry.globalIdx.Add(1))
+		u.server.workspace.AddTopLevel(NewWaylandClient(u.uniq, wsc.id, wsc, u))
 
 		if seat := wsc.registry.FindSeat(); seat != nil {
 			seat.Grab(u)
@@ -164,7 +159,7 @@ func (u *XDG_Surface) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessa
 				wsc.registry.New(uint32(*new_id), popup)
 
 				// find the parent window...
-				window := u.server.workspace.GetChild(parentSurface.GetParentUniq())
+				window := u.server.workspace.GetTopLevel(parentSurface.uniq)
 				// setup popup rendering in the client
 				if wayland, ok := window.(*WaylandClient); ok {
 					wayland.PushPopup(popup)

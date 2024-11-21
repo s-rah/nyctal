@@ -3,13 +3,15 @@ package wayland
 import (
 	"fmt"
 	"image"
+	"image/color"
 
 	"nyctal/model"
 	"nyctal/utils"
 )
 
 type WaylandClient struct {
-	id           int
+	id           model.GlobalIdx
+	parent       model.GlobalIdx
 	surface      *XDG_Surface
 	hasPointer   bool
 	popups       utils.Stack[*XDGPopup]
@@ -17,8 +19,16 @@ type WaylandClient struct {
 	wsc          *WaylandServerConn
 }
 
-func NewWaylandClient(client int, wsc *WaylandServerConn, surface *XDG_Surface) model.Client {
-	return &WaylandClient{wsc: wsc, id: client, surface: surface}
+func NewWaylandClient(idx model.GlobalIdx, parent model.GlobalIdx, wsc *WaylandServerConn, surface *XDG_Surface) model.TopLevelWindow {
+	return &WaylandClient{wsc: wsc, id: idx, parent: parent, surface: surface}
+}
+
+func (wc *WaylandClient) Index() model.GlobalIdx {
+	return wc.id
+}
+
+func (wc *WaylandClient) Parent() model.GlobalIdx {
+	return wc.parent
 }
 
 func (wc *WaylandClient) PushPopup(popup *XDGPopup) {
@@ -30,28 +40,16 @@ func (wc *WaylandClient) PopPopup() *XDGPopup {
 	return top
 }
 
-func (wc *WaylandClient) GetChild(id int) model.Client {
-	return nil
-}
-
 func (wc *WaylandClient) Resize(width int, height int) {
-	utils.Debug(fmt.Sprintf("wayland_client#%d", wc.id), fmt.Sprintf("resizing %d %d %v", width, height, wc.surface))
+
 	if wc.surface.windowGeometry.Dx() != width || wc.surface.windowGeometry.Dy() != height {
+		utils.Debug(fmt.Sprintf("wayland_client#%d", wc.id), fmt.Sprintf("resizing %d %d %v", width, height, wc.surface))
 		wc.surface.Resize(wc.wsc, width, height)
 	}
 }
 
 func (wc *WaylandClient) AckFrame() {
 	//wc.surface.AckFrame(wc.id)
-}
-
-func (wc *WaylandClient) Parent() model.Client {
-	return nil
-}
-
-func (wc *WaylandClient) AddChild(id int, child model.Client) int {
-	// todo use this interface?
-	panic("unimplemented add child for window")
 }
 
 func (wc *WaylandClient) RemoveChild(id int) {
@@ -62,7 +60,10 @@ func (wc *WaylandClient) RemoveChildren(id int) {
 
 }
 
-func (wc *WaylandClient) Buffer() *model.BGRA {
+func (wc *WaylandClient) Buffer(buffer *model.BGRA, width int, height int) {
+
+	wc.Resize(width, height)
+
 	wl_surface := wc.surface.surface
 	img := wl_surface.cached
 	if img != nil {
@@ -71,9 +72,7 @@ func (wc *WaylandClient) Buffer() *model.BGRA {
 			wg = img.Bounds()
 		}
 
-		atZero := image.Rect(0, 0, wg.Dx(), wg.Dy())
-		window := model.EmptyBGRA(atZero)
-		model.DrawCopyOver(window, atZero, img, wg.Min)
+		model.DrawCopyOver(buffer, buffer.Bounds(), img, wg.Min)
 		wc.surface.surface.RenderFrame(wc.wsc)
 
 		for _, client := range wc.popups.Inner() {
@@ -92,9 +91,10 @@ func (wc *WaylandClient) Buffer() *model.BGRA {
 				offset := xdg_surface.RelativeOffset()
 				atZero := image.Rect(offset.X, offset.Y,
 					offset.X+client.positioner.size.Dx(),
-					offset.Y+client.positioner.size.Dy())
+					offset.Y+client.positioner.size.Dy()).Add(buffer.Bounds().Min)
 				//utils.Debug("client", fmt.Sprintf("rendering at %v %v\n", atZero, pimg.Bounds()))
-				model.DrawCopyOver(window, atZero, pimg, image.Pt(xdg_surface.windowGeometry.Min.X, xdg_surface.windowGeometry.Min.Y))
+				model.DrawCopyOver(buffer, atZero, pimg, image.Pt(xdg_surface.windowGeometry.Min.X, xdg_surface.windowGeometry.Min.Y))
+				buffer.DrawRect(atZero.Min.X, atZero.Min.Y, atZero.Max.X, atZero.Max.Y, color.RGBA{R: 255})
 			} else {
 				utils.Debug("client", "could not render popup...")
 			}
@@ -112,7 +112,7 @@ func (wc *WaylandClient) Buffer() *model.BGRA {
 							if mouseBuf != nil {
 								pointerImgLoc := wc.pointerLocal.Sub(pointerObj.hotspot)
 								windowRect := image.Rect(pointerImgLoc.X, pointerImgLoc.Y, pointerImgLoc.X+mouseBuf.Bounds().Dx(), pointerImgLoc.Y+mouseBuf.Bounds().Dy())
-								model.DrawCopyOver(window, windowRect, mouseBuf, image.Pt(0, 0))
+								model.DrawCopyOver(buffer, windowRect.Add(buffer.Bounds().Min), mouseBuf, image.Pt(0, 0))
 								pointer_surface.RenderFrame(wc.wsc)
 							}
 						}
@@ -121,11 +121,9 @@ func (wc *WaylandClient) Buffer() *model.BGRA {
 			}
 		}
 
-		return window
 	} else {
 		utils.Debug("client", "parent surface buffer was nil...")
 	}
-	return nil
 }
 
 func (wc *WaylandClient) ProcessKeyboardEvent(ev model.KeyboardEvent) {

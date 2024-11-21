@@ -3,6 +3,7 @@ package model
 const KB_CTRL = 29
 const KB_SHIFT = 42
 const KB_ALT = 56
+const KB_ENTER = 28
 const KB_TAB = 15
 const KB_ESC = 1
 const KB_SUPER = 125
@@ -28,4 +29,5 @@ func (k *Keyboard) ProcessKeyboardEvent(ev KeyboardEvent) {
 	} else {
 		k.state[int(ev.Key)] = true
 	}
+
 }

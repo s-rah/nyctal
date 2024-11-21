@@ -93,6 +93,13 @@ func (d *Display) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage) 
 				WithUint(0x01).
 				Build())
 
+		// wsc.SendMessage(
+		// 	NewPacketBuilder(newId, 0x00).
+		// 		WithUint(0x08).
+		// 		WithString("zwp_linux_dmabuf_v1").
+		// 		WithUint(0x04).
+		// 		Build())
+
 		return nil
 	default:
 		return fmt.Errorf("unknown opcode called on display: %v", packet.Opcode)

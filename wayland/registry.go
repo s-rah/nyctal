@@ -3,6 +3,7 @@ package wayland
 import (
 	"fmt"
 	"sync"
+	"sync/atomic"
 
 	"nyctal/utils"
 )
@@ -19,8 +20,9 @@ func (no *NullObject) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessa
 }
 
 type Registry struct {
-	objects map[uint32]Object
-	lock    sync.Mutex
+	objects   map[uint32]Object
+	globalIdx atomic.Uint32
+	lock      sync.Mutex
 }
 
 func NewRegistry() *Registry {

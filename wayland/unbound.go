@@ -50,6 +50,9 @@ func (u *UnboundObject) HandleMessage(wsc *WaylandServerConn, packet *WaylandMes
 		case "wl_data_device_manager":
 			utils.Debug("bind", fmt.Sprintf("wl_data_device_manager#%d", new_id))
 			wsc.registry.New(new_id, &DataDeviceManager{id: new_id})
+		// case "zwp_linux_dmabuf_v1":
+		// 	utils.Debug("bind", fmt.Sprintf("zwp_linux_dmabuf_v1#%d", new_id))
+		// 	wsc.registry.New(new_id, NewLinuxDMABuf(u.server))
 		default:
 			fmt.Printf("failed to bind: [%s]\n", *iname)
 		}

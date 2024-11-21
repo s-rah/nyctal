@@ -1,7 +1,10 @@
 *.svg
 *.jpeg
 *.prof
+*.swp
 cmd/nyctal-x11/minifb
 cmd/nyctal-x11/nyctal-x11
+cmd/nyctal-dri/nyctal-dri
 cmd/nyctal-dri/nyctal
 todo
+next.md

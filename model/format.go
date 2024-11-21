@@ -43,6 +43,28 @@ func NewBGRA(pixels []byte, rect image.Rectangle, stride int) *BGRA {
 	}
 }
 
+// HLine draws a horizontal line
+func (i *BGRA) HLine(x1, y, x2 int, col color.RGBA) {
+	for ; x1 <= x2; x1++ {
+		i.Set(x1, y, col)
+	}
+}
+
+// VLine draws a veritcal line
+func (i *BGRA) VLine(x, y1, y2 int, col color.RGBA) {
+	for ; y1 <= y2; y1++ {
+		i.Set(x, y1, col)
+	}
+}
+
+// Rect draws a rectangle utilizing HLine() and VLine()
+func (i *BGRA) DrawRect(x1, y1, x2, y2 int, col color.RGBA) {
+	i.HLine(x1, y1, x2, col)
+	i.HLine(x1, y2, x2, col)
+	i.VLine(x1, y1, y2, col)
+	i.VLine(x2, y1, y2, col)
+}
+
 func (i *BGRA) Update(pixels []byte, damage image.Rectangle, stride int) {
 
 	if i.Bounds().Max.X < damage.Bounds().Min.X {
@@ -67,6 +89,22 @@ func (i *BGRA) Update(pixels []byte, damage image.Rectangle, stride int) {
 	//pixelLen := i.Rect.Dy() * stride
 	//copy(i.Pix[0:pixelLen], pixels[0:pixelLen])
 
+}
+
+func (i *BGRA) SubImage(bounds image.Rectangle) *BGRA {
+	bounds = bounds.Intersect(i.Rect)
+	// If r1 and r2 are Rectangles, r1.Intersect(r2) is not guaranteed to be inside
+	// either r1 or r2 if the intersection is empty. Without explicitly checking for
+	// this, the Pix[i:] expression below can panic.
+	if bounds.Empty() {
+		return &BGRA{}
+	}
+	p := i.PixOffset(bounds.Min.X, bounds.Min.Y)
+	return &BGRA{
+		Pix:    i.Pix[p:],
+		Stride: i.Stride,
+		Rect:   bounds,
+	}
 }
 
 func (i *BGRA) Damage(start int, end int, new []byte) {

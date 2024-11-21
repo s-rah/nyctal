@@ -18,6 +18,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"image"
 	"image/color"
 	"sync"
 
@@ -60,12 +61,12 @@ func MouseButton(window *C.struct_mfb_window, button C.mfb_key, mod C.mfb_key_mo
 	if isPressed {
 		state = 1
 	}
-	wspace.ProcessPointerEvent(model.PointerEvent{Button: &model.PointerButtonEvent{Time: uint32(time.Now().UnixMilli()), Button: uint32(button - 1 + 0x110), State: state}})
+	wspace.ProcessPointerEvent(POINTER, *KEYBOARD, model.PointerEvent{Button: &model.PointerButtonEvent{Time: uint32(time.Now().UnixMilli()), Button: uint32(button - 1 + 0x110), State: state}})
 }
 
 //export MouseScroll
 func MouseScroll(window *C.struct_mfb_window, mod C.mfb_key_mod, dx C.float, dy C.float) {
-	wspace.ProcessPointerEvent(model.PointerEvent{Axis: &model.PointerAxisEvent{Time: uint32(time.Now().UnixMilli()), Axis: 0, Value: float32(-dy * 4.0)}})
+	wspace.ProcessPointerEvent(POINTER, *KEYBOARD, model.PointerEvent{Axis: &model.PointerAxisEvent{Time: uint32(time.Now().UnixMilli()), Axis: 0, Value: float32(-dy * 4.0)}})
 }
 
 //export MouseMove
@@ -73,7 +74,9 @@ func MouseMove(window *C.struct_mfb_window, mx C.int, my C.int) {
 	x := C.mfb_get_mouse_x(window)
 	y := C.mfb_get_mouse_y(window)
 	if x > 0 && y > 0 {
-		wspace.ProcessPointerEvent(model.PointerEvent{Move: &model.PointerMoveEvent{Time: uint32(time.Now().UnixMilli()), MX: float32(int(x)), MY: float32(int(y))}})
+		ev := model.PointerEvent{Move: &model.PointerMoveEvent{Time: uint32(time.Now().UnixMilli()), MX: float32(int(x)), MY: float32(int(y))}}
+		POINTER.ProcessPointerEvent(ev)
+		wspace.ProcessPointerEvent(POINTER, *KEYBOARD, ev)
 	}
 }
 
@@ -96,18 +99,26 @@ func Keyboard(window *C.struct_mfb_window, key C.mfb_key, mod C.mfb_key_mod, isP
 
 	// the keys we get from minifb have already been mapped...
 
-	wspace.ProcessKeyboardEvent(model.KeyboardEvent{
+	ev := model.KeyboardEvent{
 		Time:  uint32(time.Now().UnixMilli()),
 		Key:   uint32(key - 8),
 		State: uint32(pressed),
-	})
+	}
+	KEYBOARD.ProcessKeyboardEvent(ev)
+	wspace.ProcessKeyboardEvent(POINTER, *KEYBOARD, ev)
 }
 
 var buffer *C.uint
 var buffer_len int
 
-var wspace model.Client
+var wspace model.Workspace
 var lock sync.Mutex
+
+var WIDTH int
+var HEIGHT int
+
+var POINTER model.Pointer
+var KEYBOARD = model.NewKeyboardModel()
 
 //export ResizeWindow
 func ResizeWindow(window *C.struct_mfb_window, width C.int, height C.int) {
@@ -118,9 +129,8 @@ func ResizeWindow(window *C.struct_mfb_window, width C.int, height C.int) {
 
 	buffer = (*C.uint)(C.realloc(unsafe.Pointer(buffer), C.ulong(new_buffer_len)))
 	buffer_len = new_buffer_len
-	if wspace != nil {
-		wspace.Resize(w, h)
-	}
+	WIDTH = w
+	HEIGHT = h
 }
 
 // helper function to convert a image/color to a C.uint used by minifb's buffer
@@ -154,7 +164,7 @@ func main() {
 
 	runtime.LockOSThread()
 
-	wspace = workspace.NewWorkspace(1280, 1024)
+	wspace = workspace.NewDragOverlay()
 
 	e := create_window("nyctal-x11", 128, 128)
 
@@ -181,23 +191,25 @@ func main() {
 		os.Exit(1)
 	}
 	go ws.Listen()
-	wspace.ProcessFocus()
+	//wspace.ProcessFocus()
 
 	fmt.Printf("Starting nyctal-x11...\n")
 	//lastFrame := time.Now()
 	// this is the minifb loop
+
 	for C.mfb_wait_sync(window) {
 
-		// // this will be set to false if the esc key is pressed
-		if ws, ok := wspace.(*workspace.Workspace); ok {
-			if ws.Quit {
-				fmt.Printf("closing...%v\n", time.Now())
-				C.mfb_close(window)
-				break
-			}
-		}
+		// // // this will be set to false if the esc key is pressed
+		// if ws, ok := wspace.(*workspace.Workspace); ok {
+		// 	if ws.Quit {
+		// 		fmt.Printf("closing...%v\n", time.Now())
+		// 		C.mfb_close(window)
+		// 		break
+		// 	}
+		// }
 
-		img := wspace.Buffer()
+		img := model.EmptyBGRA(image.Rect(0, 0, WIDTH, HEIGHT))
+		wspace.Buffer(img, WIDTH, HEIGHT)
 		bounds := img.Bounds()
 		w, h := bounds.Max.X, bounds.Max.Y
 		if w*h*4 == buffer_len {
@@ -219,7 +231,7 @@ func main() {
 		// there is no point in attempting to generate frames any faster than 200fps
 		// todo: in the future we should replace this with a NeedsRender() check
 		//if time.Since(lastFrame) >= time.Millisecond*5 {
-		wspace.AckFrame()
+		//wspace.AckFrame()
 		//lastFrame = time.Now()
 		//}
 	}

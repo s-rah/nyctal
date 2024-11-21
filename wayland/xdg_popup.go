@@ -38,9 +38,10 @@ func (u *XDGPopup) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage)
 	case 0:
 		// destroy
 		wsc.registry.Destroy(u.id)
-		window := u.server.workspace.GetChild(u.parent.GetParentUniq())
+		window := u.server.workspace.GetTopLevel(u.parent.uniq)
 		if wayland, ok := window.(*WaylandClient); ok {
 			wayland.PopPopup()
+			u.parent.popup = nil // prevent new surface intersections TODO: improve this interface
 		}
 		return nil
 	case 1:

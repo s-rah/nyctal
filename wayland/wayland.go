@@ -16,10 +16,10 @@ type WaylandServer struct {
 	l      net.Listener
 	socket string
 
-	workspace model.Client
+	workspace model.Workspace
 }
 
-func NewServer(display_socket string, workspace model.Client) (*WaylandServer, error) {
+func NewServer(display_socket string, workspace model.Workspace) (*WaylandServer, error) {
 	l, err := net.Listen("unix", display_socket)
 	if err != nil {
 		return nil, err
@@ -44,7 +44,7 @@ func (ws *WaylandServer) Listen() {
 
 		wsc := &WaylandServerConn{
 			socket:   fd,
-			id:       clientId,
+			id:       model.GlobalIdx(clientId),
 			fds:      utils.NewQueue[int](),
 			registry: NewRegistry(),
 		}
@@ -68,10 +68,11 @@ func (ws *WaylandServer) handle(wsc *WaylandServerConn) {
 
 	defer func() {
 		if r := recover(); r != nil {
+			debug.PrintStack()
 			fmt.Println("Recovered panic in client thread:", r)
 		}
 		utils.Debug("wayland-server", fmt.Sprintf("client#%d removed", wsc.id))
-		ws.workspace.RemoveChildren(wsc.id)
+		ws.workspace.RemoveAllWithParent(wsc.id)
 	}()
 
 	for {

@@ -25,6 +25,28 @@ func (uf BytesField) AppendToBuf(buf []byte) []byte {
 	return buf
 }
 
+type Uint16Field uint16
+
+func NewUint16Field() *UintField {
+	uf := UintField(0)
+	return &uf
+}
+func (uf Uint16Field) AppendToBuf(buf []byte) []byte {
+	buf = binary.LittleEndian.AppendUint16(buf, uint16(uf))
+	return buf
+}
+
+type Uint64Field uint64
+
+func NewUint64Field() *UintField {
+	uf := UintField(0)
+	return &uf
+}
+func (uf Uint64Field) AppendToBuf(buf []byte) []byte {
+	buf = binary.LittleEndian.AppendUint64(buf, uint64(uf))
+	return buf
+}
+
 type UintField uint32
 
 func NewUintField() *UintField {
@@ -157,6 +179,30 @@ func (pb *PacketBulder) WithFixed(u float32) *PacketBulder {
 
 func (pb *PacketBulder) WithBytes(b []byte) *PacketBulder {
 	pb.fields = append(pb.fields, BytesField(b))
+	return pb
+}
+
+func (pb *PacketBulder) WithU16Array(arr []uint16) *PacketBulder {
+	pb.fields = append(pb.fields, UintField(uint32(len(arr)*2)))
+	for _, v := range arr {
+		pb.fields = append(pb.fields, Uint16Field(v))
+	}
+	return pb
+}
+
+func (pb *PacketBulder) WithU32Array(arr []uint32) *PacketBulder {
+	pb.fields = append(pb.fields, UintField(uint32(len(arr)*4)))
+	for _, v := range arr {
+		pb.fields = append(pb.fields, UintField(v))
+	}
+	return pb
+}
+
+func (pb *PacketBulder) WithU64Array(arr []uint64) *PacketBulder {
+	pb.fields = append(pb.fields, UintField(uint64(len(arr)*8)))
+	for _, v := range arr {
+		pb.fields = append(pb.fields, Uint64Field(v))
+	}
 	return pb
 }
 

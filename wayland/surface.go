@@ -209,10 +209,10 @@ func (u *Surface) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage) 
 		// Pretend we are entering a surface....
 		if !u.first {
 			u.first = true
-			output := wsc.registry.FindOutput()
-			wsc.SendMessage(
-				NewPacketBuilder(u.id, 0x00).WithUint(output.id).
-					Build())
+			// output := wsc.registry.FindOutput()
+			// wsc.SendMessage(
+			// 	NewPacketBuilder(u.id, 0x00).WithUint(output.id).
+			// 		Build())
 		}
 
 		return nil

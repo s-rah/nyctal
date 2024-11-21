@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
+
+	//"os/exec"
 	"runtime/debug"
 	"time"
 
@@ -14,32 +17,7 @@ import (
 	"nyctal/workspace"
 )
 
-// see include/uapi/linux/input-event-codes.h
-func SetupInput(workspace model.Client) func() error {
-
-	kdev := evdev.FindAllKeyboardDevices()
-	if len(kdev) > 0 {
-		dev, f, err := evdev.Open(kdev[0])
-		if err != nil {
-			fmt.Printf("[error] %s", err)
-		} else {
-			go func() {
-				err := dev.ScanInput(context.Background())
-				utils.Debug("input handler", fmt.Sprintf("failed to scan input: %v", err))
-			}()
-			go func() {
-				utils.Debug("input handler", "starting input handler")
-
-				for {
-					//	utils.Debug("input handler", "waiting...")
-					ev := <-dev.Input
-					utils.Debug("input handler", fmt.Sprintf("type %d code %d value: %d", ev.Type, ev.Code, ev.Value))
-
-				}
-			}()
-			return f
-		}
-	}
+func SetupMouse(workspace model.Client) func() error {
 
 	mouseDev := evdev.FindMouseDevice()
 	if mouseDev != "" {
@@ -52,13 +30,13 @@ func SetupInput(workspace model.Client) func() error {
 				utils.Debug("input handler", fmt.Sprintf("failed to scan input: %v", err))
 			}()
 			go func() {
-				utils.Debug("input handler", "starting input handler")
+				utils.Debug("mouse handler", "starting input handler")
 				localX := float32(0.0)
 				localY := float32(0.0)
 				for {
 					//	utils.Debug("input handler", "waiting...")
 					ev := <-dev.Input
-					//utils.Debug("input handler", fmt.Sprintf("type %d code %d", ev.Type, ev.Code))
+					utils.Debug("mouse handler", fmt.Sprintf("type %d code %d", ev.Type, ev.Code))
 					switch ev.Type {
 					case evdev.EvKey:
 						workspace.ProcessPointerEvent(model.PointerEvent{
@@ -103,6 +81,35 @@ func SetupInput(workspace model.Client) func() error {
 	return func() error { return nil }
 }
 
+// see include/uapi/linux/input-event-codes.h
+func SetupInput(workspace model.Client) func() error {
+
+	kdev := evdev.FindAllKeyboardDevices()
+	if len(kdev) > 0 {
+		dev, f, err := evdev.Open(kdev[0])
+		if err != nil {
+			fmt.Printf("[error] %s", err)
+		} else {
+			go func() {
+				err := dev.ScanInput(context.Background())
+				utils.Debug("input handler", fmt.Sprintf("failed to scan input: %v", err))
+			}()
+			go func() {
+				utils.Debug("input handler", "starting input handler")
+
+				for {
+					//	utils.Debug("input handler", "waiting...")
+					ev := <-dev.Input
+					utils.Debug("input handler", fmt.Sprintf("type %d code %d value: %d", ev.Type, ev.Code, ev.Value))
+					workspace.ProcessKeyboardEvent(model.KeyboardEvent{Time: uint32(time.Now().UnixMilli()), Key: uint32(ev.Code), State: uint32(ev.Value)})
+				}
+			}()
+			return f
+		}
+	}
+	return func() error { return nil }
+}
+
 func main() {
 
 	debug.SetPanicOnFault(false)
@@ -133,10 +140,22 @@ func main() {
 	go ws.Listen()
 	closeInput := SetupInput(wspace)
 	defer closeInput()
+	closeMInput := SetupMouse(wspace)
+	defer closeMInput()
 	wspace.ProcessFocus()
 
 	fmt.Printf("Starting Nyctal...\n")
 	lastFrame := time.Now()
+
+	cmd := exec.Command("/bin/elope")
+	go func() {
+		time.Sleep(time.Second * 2)
+		stdoutStderr, err := cmd.CombinedOutput()
+		if err != nil {
+		}
+		fmt.Printf("%s\n", stdoutStderr)
+		os.Exit(1)
+	}()
 
 	for {
 		// time check is here to prevent spamming the workspace render buffer (which may attempt to e.g. reconfigure windwows)

@@ -4,19 +4,23 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net"
+	"sync/atomic"
+
 	"syscall"
 	"time"
 
 	"golang.org/x/sys/unix"
 
+	"nyctal/model"
 	"nyctal/utils"
 )
 
 type WaylandServerConn struct {
-	socket   net.Conn
-	registry *Registry
-	id       int
-	fds      *utils.Queue[int]
+	socket    net.Conn
+	registry  *Registry
+	id        model.GlobalIdx
+	fds       *utils.Queue[int]
+	globalIdx atomic.Uint32
 }
 
 func (c *WaylandServerConn) SendMessageWithFd(data []byte, fd int) {
@@ -32,6 +36,7 @@ func (c *WaylandServerConn) SendMessage(data []byte) {
 func (c *WaylandServerConn) RecvMsg(connFd int, p []byte) (int, error) {
 
 	b := make([]byte, unix.CmsgSpace(4))
+	syscall.SetNonblock(connFd, false)
 	n, oobn, _, _, err := syscall.Recvmsg(connFd, p, b, 0)
 
 	// parse socket control message
