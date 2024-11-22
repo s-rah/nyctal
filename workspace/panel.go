@@ -2,7 +2,6 @@ package workspace
 
 import (
 	"fmt"
-	"image"
 	"nyctal/model"
 	"nyctal/utils"
 	"runtime/debug"
@@ -11,7 +10,6 @@ import (
 
 type Panel struct {
 	windows *utils.Queue[model.TopLevelWindow]
-	bounds  image.Rectangle
 	lock    sync.Mutex
 	do      *DragOverlay
 }
@@ -48,8 +46,8 @@ func (p *Panel) RemoveTopLevel(idx model.GlobalIdx) {
 	utils.Debug("panel", fmt.Sprintf("remove top window: %v", idx))
 	newWindows := utils.NewQueue[model.TopLevelWindow]()
 	for !p.windows.Empty() {
-		window, _ := p.windows.Pop()
-		if window.Index() != idx {
+		window, err := p.windows.Pop()
+		if window != nil && err == nil && window.Index() != idx {
 			newWindows.Push(window)
 		}
 	}
@@ -62,8 +60,8 @@ func (p *Panel) RemoveAllWithParent(pidx model.GlobalIdx) {
 	utils.Debug("panel", fmt.Sprintf("remove parent window: %v", pidx))
 	newWindows := utils.NewQueue[model.TopLevelWindow]()
 	for !p.windows.Empty() {
-		window, _ := p.windows.Pop()
-		if window.Parent() != pidx {
+		window, err := p.windows.Pop()
+		if window != nil && err != nil && window.Parent() != pidx {
 			newWindows.Push(window)
 		}
 	}

@@ -52,7 +52,7 @@ type LinuxDMABufParams struct {
 }
 
 func NewLinuxDMABufParams(id uint32, wsc *WaylandServerConn) *LinuxDMABufParams {
-	return &LinuxDMABufParams{}
+	return &LinuxDMABufParams{id: id}
 }
 
 func (u *LinuxDMABufParams) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage) error {

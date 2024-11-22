@@ -60,7 +60,7 @@ func (u *SHMPool) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage) 
 		utils.Debug("shm_pool", fmt.Sprintf("resize, %d ", *newsize))
 
 		data, err := unix.Mremap(u.data, int(u.size), unix.MREMAP_MAYMOVE)
-		if err != nil {
+		if data == nil || err != nil {
 			return fmt.Errorf("could not remap data: %v", err)
 		}
 		u.data = data

@@ -66,8 +66,8 @@ func (s *Seat) ProcessPointerEvent(wsc *WaylandServerConn, ev model.PointerEvent
 				wsc.SendMessage(NewPacketBuilder(s.mouse, 0x01).
 					WithUint(s.serial).
 					WithUint(s.pointerFocus.surface.id).Build())
-				s.pointerFocus = nil
 				s.pointerFocus.hasPointer = false
+				s.pointerFocus = nil
 			}
 			return
 		}

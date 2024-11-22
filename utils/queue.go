@@ -1,5 +1,7 @@
 package utils
 
+import "fmt"
+
 type Queue[T any] struct {
 	elements []T
 }
@@ -25,13 +27,13 @@ func (queue *Queue[T]) PushTop(key T) {
 	queue.elements = append([]T{key}, queue.elements...)
 }
 
-func (queue *Queue[T]) Pop() (T, bool) {
+func (queue *Queue[T]) Pop() (T, error) {
 	var x T
 	if len(queue.elements) > 0 {
 		x, queue.elements = queue.elements[0], queue.elements[1:]
-		return x, true
+		return x, nil
 	}
-	return x, false
+	return x, fmt.Errorf("attempted to pop an empty queue")
 }
 
 func (queue *Queue[T]) Empty() bool {

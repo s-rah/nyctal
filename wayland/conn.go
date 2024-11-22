@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net"
-	"sync/atomic"
 
 	"syscall"
 	"time"
@@ -16,11 +15,10 @@ import (
 )
 
 type WaylandServerConn struct {
-	socket    net.Conn
-	registry  *Registry
-	id        model.GlobalIdx
-	fds       *utils.Queue[int]
-	globalIdx atomic.Uint32
+	socket   net.Conn
+	registry *Registry
+	id       model.GlobalIdx
+	fds      *utils.Queue[int]
 }
 
 func (c *WaylandServerConn) SendMessageWithFd(data []byte, fd int) {
@@ -42,7 +40,7 @@ func (c *WaylandServerConn) RecvMsg(connFd int, p []byte) (int, error) {
 	// parse socket control message
 	if oobn > 0 {
 		cmsgs, err := unix.ParseSocketControlMessage(b)
-		if err != nil {
+		if err != nil || cmsgs == nil {
 			return 0, err
 		}
 		fds, err := unix.ParseUnixRights(&cmsgs[0])

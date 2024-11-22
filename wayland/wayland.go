@@ -100,7 +100,7 @@ func (ws *WaylandServer) handle(wsc *WaylandServerConn) {
 func getConnFd(conn syscall.Conn) (connFd int, err error) {
 	var rawConn syscall.RawConn
 	rawConn, err = conn.SyscallConn()
-	if err != nil {
+	if rawConn == nil || err != nil {
 		return
 	}
 

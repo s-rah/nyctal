@@ -23,10 +23,10 @@ func (u *SHM) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage) erro
 
 		utils.Debug(fmt.Sprintf("shm#%d", u.id), fmt.Sprintf("wm_shm_pool#%d %d", *newId, *size))
 
-		fd, ok := wsc.fds.Pop()
+		fd, err := wsc.fds.Pop()
 		fmt.Printf("pop fd (%d)\n", fd)
-		if !ok {
-			return fmt.Errorf("no fd in queue")
+		if err != nil {
+			return fmt.Errorf("expected an fd, but could not pop from queue: %v", err)
 		}
 
 		pool, err := NewSHMPool(uint32(*newId), u.server, fd, uint32(*size))
