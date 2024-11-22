@@ -3,7 +3,6 @@ package wayland
 import (
 	"fmt"
 
-
 	"nyctal/utils"
 )
 
