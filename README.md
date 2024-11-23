@@ -47,8 +47,8 @@ Nyctal aims to supports the bare-minimum of wayland needed to run most basic app
 
 - The **Core Wayland Protocol** (Except `wl_shell` which is deprecated)
     - [X] wl_compositor
-    - [ ] wl_subcompositor (partial)
-        - [ ] wl_subsurface 
+    - [X] wl_subcompositor 
+        - [X] wl_subsurface 
     - [X] wl_shm 
     - [X] wl_shmpool
     - [X] wl_region (partial)
