@@ -25,21 +25,22 @@ func (u *SubCompositor) HandleMessage(wsc *WaylandServerConn, packet *WaylandMes
 		}
 		utils.Debug("compositor", fmt.Sprintf("create_subsurface#%d", newId))
 
-		wsc.registry.New(uint32(*newId),
-			&SubSurface{server: u.server, id: uint32(*newId), surface: uint32(*surface), parent: uint32(*parent)})
-
 		if surface, err := wsc.registry.Get(uint32(*surface)); err == nil {
 			if surfaceObj, ok := surface.(*Surface); ok {
-				surfaceObj.parent = uint32(*parent)
-				surfaceObj.AddChild(uint32(*newId))
-			} else {
-				return fmt.Errorf("could not find linekd surface")
+
+				if parentsurface, err := wsc.registry.Get(uint32(*parent)); err == nil {
+					if parentsurfaceObj, ok := parentsurface.(*Surface); ok {
+
+						subSurface := &SubSurface{server: u.server, id: uint32(*newId), surface: surfaceObj, parent: parentsurfaceObj}
+						wsc.registry.New(uint32(*newId), subSurface)
+						parentsurfaceObj.AddSubSurface(subSurface)
+						return nil
+					}
+				}
 			}
-		} else {
-			return err
 		}
 
-		return nil
+		return fmt.Errorf("could not set up subsurface")
 	default:
 		return fmt.Errorf("unknown opcode called on unbound object: %v", packet.Opcode)
 	}

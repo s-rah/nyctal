@@ -9,12 +9,12 @@ import (
 )
 
 type Seat struct {
-	server   *WaylandServer
-	id       uint32
-	keyboard *Keyboard
-	mouse    uint32
-	serial   uint32
-
+	server       *WaylandServer
+	id           uint32
+	keyboard     *Keyboard
+	mouse        *Pointer
+	serial       uint32
+	DataDevice   *DataDevice
 	pointerFocus *XDG_Surface
 }
 
@@ -54,7 +54,7 @@ func checkIntersect(point image.Point, surface *XDG_Surface) *XDG_Surface {
 
 func (s *Seat) ProcessPointerEvent(wsc *WaylandServerConn, ev model.PointerEvent, surface *XDG_Surface) {
 
-	if s.mouse != 0 && ev.Move != nil {
+	if s.mouse != nil && ev.Move != nil {
 
 		is := checkIntersect(image.Pt(int(ev.Move.MX), int(ev.Move.MY)), surface)
 
@@ -63,7 +63,7 @@ func (s *Seat) ProcessPointerEvent(wsc *WaylandServerConn, ev model.PointerEvent
 			if s.pointerFocus != nil {
 				s.serial += 1
 				utils.Debug(fmt.Sprintf("wl_pointer#%d", s.mouse), fmt.Sprintf("leave %d ", s.pointerFocus.surface.id))
-				wsc.SendMessage(NewPacketBuilder(s.mouse, 0x01).
+				wsc.SendMessage(NewPacketBuilder(s.mouse.id, 0x01).
 					WithUint(s.serial).
 					WithUint(s.pointerFocus.surface.id).Build())
 				s.pointerFocus.hasPointer = false
@@ -78,7 +78,7 @@ func (s *Seat) ProcessPointerEvent(wsc *WaylandServerConn, ev model.PointerEvent
 		} else if is.id != s.pointerFocus.id {
 			s.serial += 1
 			utils.Debug(fmt.Sprintf("wl_pointer#%d", s.mouse), fmt.Sprintf("leave %d ", s.pointerFocus.surface.id))
-			wsc.SendMessage(NewPacketBuilder(s.mouse, 0x01).
+			wsc.SendMessage(NewPacketBuilder(s.mouse.id, 0x01).
 				WithUint(s.serial).
 				WithUint(s.pointerFocus.surface.id).Build())
 			utils.Debug(fmt.Sprintf("wl_pointer#%d", s.mouse), fmt.Sprintf("leave %d ", s.pointerFocus.surface.id))
@@ -96,7 +96,7 @@ func (s *Seat) ProcessPointerEvent(wsc *WaylandServerConn, ev model.PointerEvent
 			ev.Move.MY -= float32(top.RelativeOffset().Y)
 		}
 
-		if s.mouse != 0 {
+		if s.mouse != nil {
 
 			if !top.hasPointer {
 
@@ -108,7 +108,7 @@ func (s *Seat) ProcessPointerEvent(wsc *WaylandServerConn, ev model.PointerEvent
 				}
 
 				s.serial += 1
-				pb := NewPacketBuilder(s.mouse, 0x00).
+				pb := NewPacketBuilder(s.mouse.id, 0x00).
 					WithUint(s.serial).
 					WithUint(top.surface.id)
 
@@ -123,12 +123,12 @@ func (s *Seat) ProcessPointerEvent(wsc *WaylandServerConn, ev model.PointerEvent
 				wsc.SendMessage(pb.Build())
 				utils.Debug(fmt.Sprintf("wl_pointer#%d", s.mouse), fmt.Sprintf("enter %d %v", top.surface.id, ev.Move))
 				top.hasPointer = true
-				wsc.SendMessage(NewPacketBuilder(s.mouse, 0x05).Build())
+				wsc.SendMessage(NewPacketBuilder(s.mouse.id, 0x05).Build())
 
 			}
 
 			if ev.Move != nil {
-				wsc.SendMessage(NewPacketBuilder(s.mouse, 0x02).
+				wsc.SendMessage(NewPacketBuilder(s.mouse.id, 0x02).
 					WithUint(ev.Move.Time).
 					WithFixed(ev.Move.MX).
 					WithFixed(ev.Move.MY).Build())
@@ -137,7 +137,7 @@ func (s *Seat) ProcessPointerEvent(wsc *WaylandServerConn, ev model.PointerEvent
 
 			if ev.Button != nil {
 				s.serial += 1
-				wsc.SendMessage(NewPacketBuilder(s.mouse, 0x03).
+				wsc.SendMessage(NewPacketBuilder(s.mouse.id, 0x03).
 					WithUint(s.serial).
 					WithUint(ev.Button.Time).
 					WithUint(ev.Button.Button).
@@ -146,13 +146,13 @@ func (s *Seat) ProcessPointerEvent(wsc *WaylandServerConn, ev model.PointerEvent
 			}
 
 			if ev.Axis != nil {
-				wsc.SendMessage(NewPacketBuilder(s.mouse, 0x04).
+				wsc.SendMessage(NewPacketBuilder(s.mouse.id, 0x04).
 					WithUint(ev.Axis.Time).
 					WithUint(ev.Axis.Axis).
 					WithFixed(ev.Axis.Value).Build())
 				//utils.Debug(fmt.Sprintf("wl_pointer#%d", s.mouse), "axis")
 			}
-			wsc.SendMessage(NewPacketBuilder(s.mouse, 0x05).Build())
+			wsc.SendMessage(NewPacketBuilder(s.mouse.id, 0x05).Build())
 			//	utils.Debug(fmt.Sprintf("wl_pointer#%d", s.mouse), "frame")
 		}
 	}
@@ -162,6 +162,7 @@ func NewSeat(wsc *WaylandServerConn, id uint32) *Seat {
 
 	wsc.SendMessage(NewPacketBuilder(id, 0x00).WithUint(0x03).Build())
 	utils.Debug(fmt.Sprintf("wl_seat#%d", id), "capabilities")
+	wsc.SendMessage(NewPacketBuilder(id, 0x01).WithString("default").Build())
 
 	return &Seat{id: id}
 }
@@ -175,8 +176,10 @@ func (u *Seat) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage) err
 		if err := ParsePacketStructure(packet.Data, mouse_id); err != nil {
 			return err
 		}
-		u.mouse = uint32(*mouse_id)
-		wsc.registry.New(u.mouse, &Pointer{server: u.server, id: u.mouse})
+		u.mouse = &Pointer{server: u.server, id: uint32(*mouse_id)}
+		fmt.Printf("newseatmouse id %v\n", u.mouse)
+
+		wsc.registry.New(uint32(*mouse_id), u.mouse)
 
 		utils.Debug("wl_seat", fmt.Sprintf("get_pointer#%d", u.mouse))
 		return nil

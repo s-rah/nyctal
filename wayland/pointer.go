@@ -34,8 +34,8 @@ func (u *Pointer) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage) 
 		utils.Debug(fmt.Sprintf("pointer#%d", u.id), fmt.Sprintf("set_cursor %d %d %d %d", *serial, *surface, *x, *y))
 		u.surface = uint32(*surface)
 		u.hotspot = image.Pt(int(*x), int(*y))
-
 		return nil
+
 	case 1:
 		return nil
 	default:

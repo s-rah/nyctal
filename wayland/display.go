@@ -23,13 +23,13 @@ func (d *Display) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage) 
 
 		wsc.SendMessage(
 			NewPacketBuilder(uint32(*newID), 0x00).
-				WithUint(uint32(d.lastSync)).
+				WithUint(0).
 				Build())
 
-		wsc.SendMessage(
-			NewPacketBuilder(0x01, 0x01).
-				WithUint(uint32(*newID)).
-				Build())
+		// wsc.SendMessage(
+		// 	NewPacketBuilder(0x01, 0x01).
+		// 		WithUint(uint32(*newID)).
+		// 		Build())
 
 		d.lastSync += 1
 
@@ -90,6 +90,13 @@ func (d *Display) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage) 
 			NewPacketBuilder(newId, 0x00).
 				WithUint(0x07).
 				WithString("wl_output").
+				WithUint(0x01).
+				Build())
+
+		wsc.SendMessage(
+			NewPacketBuilder(newId, 0x00).
+				WithUint(0x08).
+				WithString("wp_viewporter").
 				WithUint(0x01).
 				Build())
 

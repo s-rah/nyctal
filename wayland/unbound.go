@@ -37,19 +37,39 @@ func (u *UnboundObject) HandleMessage(wsc *WaylandServerConn, packet *WaylandMes
 			utils.Debug("bind", fmt.Sprintf("wl_shm#%d", new_id))
 			// Send Format Message...
 			wsc.SendMessage(NewPacketBuilder(new_id, 0x00).WithUint(uint32(model.FormatARGB)).Build())
+			wsc.SendMessage(NewPacketBuilder(new_id, 0x00).WithUint(uint32(model.FormatXRGB)).Build())
+			wsc.SendMessage(NewPacketBuilder(new_id, 0x00).WithUint(uint32(909199186)).Build())
+			wsc.SendMessage(NewPacketBuilder(new_id, 0x00).WithUint(uint32(875709016)).Build())
+			wsc.SendMessage(NewPacketBuilder(new_id, 0x00).WithUint(uint32(875708993)).Build())
+			wsc.SendMessage(NewPacketBuilder(new_id, 0x00).WithUint(uint32(875708754)).Build())
+			wsc.SendMessage(NewPacketBuilder(new_id, 0x00).WithUint(uint32(875714642)).Build())
+			wsc.SendMessage(NewPacketBuilder(new_id, 0x00).WithUint(uint32(875714626)).Build())
+			wsc.SendMessage(NewPacketBuilder(new_id, 0x00).WithUint(uint32(875708738)).Build())
+			wsc.SendMessage(NewPacketBuilder(new_id, 0x00).WithUint(uint32(808669784)).Build())
+			wsc.SendMessage(NewPacketBuilder(new_id, 0x00).WithUint(uint32(808669761)).Build())
+			wsc.SendMessage(NewPacketBuilder(new_id, 0x00).WithUint(uint32(808665688)).Build())
+			wsc.SendMessage(NewPacketBuilder(new_id, 0x00).WithUint(uint32(808665665)).Build())
 			wsc.registry.New(new_id, &SHM{id: new_id})
 		case "xdg_wm_base":
 			utils.Debug("bind", fmt.Sprintf("xdg_wm_base#%d", new_id))
 			wsc.registry.New(new_id, &XDG_Base{server: u.server, id: new_id})
 		case "wl_seat":
 			utils.Debug("bind", fmt.Sprintf("wl_seat#%d", new_id))
-			wsc.registry.New(new_id, NewSeat(wsc, new_id))
+			if seat := wsc.registry.FindSeat(); seat != nil {
+				seat.id = new_id
+				wsc.registry.New(new_id, seat)
+			} else {
+				wsc.registry.New(new_id, NewSeat(wsc, new_id))
+			}
 		case "wl_output":
 			utils.Debug("bind", fmt.Sprintf("wl_output#%d", new_id))
 			wsc.registry.New(new_id, NewOutput(new_id, wsc))
 		case "wl_data_device_manager":
 			utils.Debug("bind", fmt.Sprintf("wl_data_device_manager#%d", new_id))
 			wsc.registry.New(new_id, &DataDeviceManager{id: new_id})
+		case "wp_viewporter":
+			utils.Debug("bind", fmt.Sprintf("wp_viewporter#%d", new_id))
+			wsc.registry.New(new_id, &WPViewporter{id: new_id})
 		// case "zwp_linux_dmabuf_v1":
 		// 	utils.Debug("bind", fmt.Sprintf("zwp_linux_dmabuf_v1#%d", new_id))
 		// 	wsc.registry.New(new_id, NewLinuxDMABuf(u.server))

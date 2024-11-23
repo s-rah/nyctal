@@ -9,6 +9,10 @@ type DataDevice struct {
 	selection *DataSource
 }
 
+func (u *DataDevice) Selection(wsc *WaylandServerConn) {
+	wsc.SendMessage(NewPacketBuilder(u.id, 0x05).WithUint(0).Build())
+}
+
 func (u *DataDevice) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage) error {
 
 	switch packet.Opcode {

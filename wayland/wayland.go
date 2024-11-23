@@ -81,6 +81,8 @@ func (ws *WaylandServer) handle(wsc *WaylandServerConn) {
 		if err != nil {
 			utils.Debug("wayland-server", err.Error())
 			break
+		} else {
+			utils.Debug("wayland-message", fmt.Sprintf("%d %v", wsc.id, packet))
 		}
 
 		if obj, err := wsc.registry.Get(uint32(packet.Address)); err == nil {

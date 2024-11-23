@@ -10,8 +10,8 @@ import (
 type SubSurface struct {
 	server   *WaylandServer
 	id       uint32
-	surface  uint32
-	parent   uint32
+	surface  *Surface
+	parent   *Surface
 	position image.Point
 	synced   bool
 }

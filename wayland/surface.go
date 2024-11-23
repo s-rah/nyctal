@@ -1,9 +1,9 @@
 package wayland
 
 import (
-	"crypto/rand"
 	"fmt"
 	"image"
+	"time"
 
 	"nyctal/model"
 	"nyctal/utils"
@@ -11,7 +11,7 @@ import (
 
 type Surface struct {
 	id            uint32
-	frameCallback uint32
+	frameCallback utils.Queue[uint32]
 
 	attached bool
 	pending  *Buffer
@@ -19,14 +19,13 @@ type Surface struct {
 	commitedInputRegion *Region
 	pendingInputRegion  *Region
 
-	parent   uint32
-	children []uint32
+	children []*SubSurface
 	cached   *model.BGRA
 	damage   []image.Rectangle
 	first    bool
 }
 
-func (u *Surface) AddChild(child_surface uint32) {
+func (u *Surface) AddSubSurface(child_surface *SubSurface) {
 	u.children = append(u.children, child_surface)
 }
 
@@ -71,26 +70,27 @@ func (u *Surface) read_buffer() *model.BGRA {
 	return nil
 }
 
-func (u *Surface) RenderFrame(wsc *WaylandServerConn) {
+func (u *Surface) RenderFrame(wsc *WaylandServerConn, serial []byte) []byte {
 
-	if u.frameCallback != 0 {
-		serial := []byte{0, 0, 0, 0}
-		rand.Read(serial)
+	for !u.frameCallback.Empty() {
+		nullserial := uint32(time.Now().UnixMilli())
+
+		cb, _ := u.frameCallback.Pop()
 		wsc.SendMessage(
-			NewPacketBuilder(u.frameCallback, 0x00).
-				WithBytes(serial).
+			NewPacketBuilder(cb, 0x00).
+				WithUint(nullserial).
 				Build())
 
 		utils.Debug(fmt.Sprintf("xdg_surface#%d", u.id), fmt.Sprintf("callback frame#%d", u.frameCallback))
 
 		wsc.SendMessage(
 			NewPacketBuilder(0x01, 0x01).
-				WithUint(u.frameCallback).
+				WithUint(cb).
 				Build())
 
 	}
 
-	u.frameCallback = 0
+	return serial
 }
 
 func (u *Surface) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage) error {
@@ -146,7 +146,7 @@ func (u *Surface) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage) 
 			return err
 		}
 		utils.Debug(fmt.Sprintf("surface#%d", u.id), fmt.Sprintf("frame_callback#%d", *newId))
-		u.frameCallback = uint32(*newId)
+		u.frameCallback.Push(uint32(*newId))
 		return nil
 	case 4:
 		//fmt.Printf("set input region\n")
@@ -171,11 +171,13 @@ func (u *Surface) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage) 
 	case 5:
 		// we ignore all opauqe region hints...
 		return nil
+	case 7:
+		// set buffer something...
+		return nil
 	case 8:
 		//fmt.Printf("set buffer scale\n")
 		return nil
 	case 6:
-
 		u.commitedInputRegion = u.pendingInputRegion
 
 		// received create pool message...
@@ -207,13 +209,18 @@ func (u *Surface) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage) 
 		utils.Debug(fmt.Sprintf("surface#%d", u.id), "commit")
 
 		// Pretend we are entering a surface....
-		if !u.first {
+		//if !u.first {
+		//u.first = true
+		output := wsc.registry.FindOutput()
+		if output != nil && !u.first {
 			u.first = true
-			// output := wsc.registry.FindOutput()
-			// wsc.SendMessage(
-			// 	NewPacketBuilder(u.id, 0x00).WithUint(output.id).
-			// 		Build())
+			wsc.SendMessage(
+				NewPacketBuilder(u.id, 0x00).WithUint(output.id).
+					Build())
 		}
+		//dd := wsc.registry.FindDataDevice()
+		//dd.Selection(wsc)
+		//}
 
 		return nil
 	case 9:

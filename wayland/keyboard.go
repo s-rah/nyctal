@@ -17,6 +17,7 @@ type Keyboard struct {
 func NewKeyboard(id uint32, wsc *WaylandServerConn) *Keyboard {
 	keyboard := &Keyboard{id: id, wsc: wsc, kb: model.NewKeyboardModel()}
 	wsc.registry.New(id, keyboard)
+	wsc.SendMessage(NewPacketBuilder(id, 0x05).WithUint(40).WithUint(400).Build())
 	keyboard.SendKeyMap()
 	return keyboard
 }
@@ -26,7 +27,7 @@ func NewKeyboard(id uint32, wsc *WaylandServerConn) *Keyboard {
 // we have not (yet) written go-code to compile a real keymap
 // as such we are always going to declare that we know nothing of keymaps, and instead
 // default to sending raw scancodes.
-// Note: Because of this we orix - ori running in an x11 window is dependent on a custom fork
+// Note: Because of this nyctal running in an x11 window is dependent on a custom fork
 // of minifb which surfaces scancodes instead of xkbcommon codes...
 func (u *Keyboard) SendKeyMap() {
 	pb := NewPacketBuilder(u.id, 0x00).
@@ -34,11 +35,15 @@ func (u *Keyboard) SendKeyMap() {
 		WithUint(0)
 
 	utils.Debug(fmt.Sprintf("wl_keyboard#%d", u.id), fmt.Sprintf("keymap %d %d", 0, 0))
-	u.wsc.SendMessageWithFd(pb.Build(), 0)
+	fd, _, err := utils.Memfile("nothing", []byte{0})
+	if err != nil {
+		panic(fmt.Sprintf("could not memmap %v\n", err))
+	}
+	u.wsc.SendMessageWithFd(pb.Build(), fd)
 }
 
 func (u *Keyboard) Enter(serial uint32, surface *Surface) {
-
+	utils.Debug("keyboard", "enter")
 	u.activeSurface = surface
 
 	downKeys := u.kb.DownKeys()
@@ -56,6 +61,11 @@ func (u *Keyboard) Enter(serial uint32, surface *Surface) {
 
 	u.wsc.SendMessage(pb.Build())
 	u.sendModifiers(serial)
+
+	if dd := u.wsc.registry.FindDataDevice(); dd != nil {
+		dd.Selection(u.wsc)
+	}
+
 }
 
 func (u *Keyboard) Leave(serial uint32) {
@@ -73,6 +83,7 @@ func (u *Keyboard) ProcessKeyboardEvent(ev model.KeyboardEvent, serial uint32) {
 	utils.Debug(fmt.Sprintf("wl_keyboard#%d", u.id), fmt.Sprintf("key: %v", ev))
 	u.kb.ProcessKeyboardEvent(ev)
 	if u.activeSurface != nil {
+
 		utils.Debug("keyboard", "processing keyboard event")
 		pb := NewPacketBuilder(u.id, 0x03).
 			WithUint(serial).

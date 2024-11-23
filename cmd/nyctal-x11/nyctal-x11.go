@@ -75,8 +75,10 @@ func MouseMove(window *C.struct_mfb_window, mx C.int, my C.int) {
 	y := C.mfb_get_mouse_y(window)
 	if x > 0 && y > 0 {
 		ev := model.PointerEvent{Move: &model.PointerMoveEvent{Time: uint32(time.Now().UnixMilli()), MX: float32(int(x)), MY: float32(int(y))}}
-		POINTER.ProcessPointerEvent(ev)
-		wspace.ProcessPointerEvent(POINTER, *KEYBOARD, ev)
+		if POINTER.ProcessPointerEvent(ev) {
+			wspace.ProcessPointerEvent(POINTER, *KEYBOARD, ev)
+		}
+
 	}
 }
 
@@ -194,45 +196,44 @@ func main() {
 	//wspace.ProcessFocus()
 
 	fmt.Printf("Starting nyctal-x11...\n")
-	//lastFrame := time.Now()
+	lastFrame := time.Now()
 	// this is the minifb loop
 
 	for C.mfb_wait_sync(window) {
 
-		// // // this will be set to false if the esc key is pressed
-		// if ws, ok := wspace.(*workspace.Workspace); ok {
-		// 	if ws.Quit {
-		// 		fmt.Printf("closing...%v\n", time.Now())
-		// 		C.mfb_close(window)
-		// 		break
-		// 	}
-		// }
-
-		img := model.EmptyBGRA(image.Rect(0, 0, WIDTH, HEIGHT))
-		wspace.Buffer(img, WIDTH, HEIGHT)
-		bounds := img.Bounds()
-		w, h := bounds.Max.X, bounds.Max.Y
-		if w*h*4 == buffer_len {
-			pixels := unsafe.Slice((*C.uint)(buffer), w*h)
-			for j := 0; j < h; j++ {
-				for i := 0; i < w; i++ {
-					pixels[(w*j)+i] = value(img.AtRaw(i, j))
-				}
-			}
-
-			// minifb stuff
-			state := C.mfb_update_ex(window, unsafe.Pointer(buffer), C.uint(w), C.uint(h))
-			if state < 0 {
-				break
-			}
-		}
-
 		// time check is here to prevent spamming the workspace render buffer (which may attempt to e.g. reconfigure windwows)
 		// there is no point in attempting to generate frames any faster than 200fps
 		// todo: in the future we should replace this with a NeedsRender() check
-		//if time.Since(lastFrame) >= time.Millisecond*5 {
-		//wspace.AckFrame()
-		//lastFrame = time.Now()
-		//}
+		if time.Since(lastFrame) >= time.Millisecond*20 {
+			// // // this will be set to false if the esc key is pressed
+			// if ws, ok := wspace.(*workspace.Workspace); ok {
+			// 	if ws.Quit {
+			// 		fmt.Printf("closing...%v\n", time.Now())
+			// 		C.mfb_close(window)
+			// 		break
+			// 	}
+			// }
+
+			img := model.EmptyBGRA(image.Rect(0, 0, WIDTH, HEIGHT))
+			wspace.Buffer(img, WIDTH, HEIGHT)
+			bounds := img.Bounds()
+			w, h := bounds.Max.X, bounds.Max.Y
+			if w*h*4 == buffer_len {
+				pixels := unsafe.Slice((*C.uint)(buffer), w*h)
+				for j := 0; j < h; j++ {
+					for i := 0; i < w; i++ {
+						pixels[(w*j)+i] = value(img.AtRaw(i, j))
+					}
+				}
+
+				// minifb stuff
+				state := C.mfb_update_ex(window, unsafe.Pointer(buffer), C.uint(w), C.uint(h))
+				if state < 0 {
+					break
+				}
+			}
+
+			lastFrame = time.Now()
+		}
 	}
 }

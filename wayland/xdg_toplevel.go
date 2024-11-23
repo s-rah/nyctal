@@ -21,12 +21,7 @@ func (u *XDG_Toplevel) Configure(wsc *WaylandServerConn, width int, height int) 
 	wsc.SendMessage(NewPacketBuilder(u.id, 0x00).
 		WithUint(uint32(width)).
 		WithUint(uint32(height)).
-		WithUint(4 * 5).
-		WithUint(0x04).
-		WithUint(0x05).
-		WithUint(0x06).
-		WithUint(0x07).
-		WithUint(0x08).
+		WithUint(0).
 		Build())
 	u.size = image.Pt(width, height)
 	//}

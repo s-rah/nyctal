@@ -18,12 +18,12 @@ type Buffer struct {
 
 func (u *Buffer) Release(wsc *WaylandServerConn) {
 
-	wsc.SendMessage(
-		NewPacketBuilder(u.id, 0x00).
-			Build())
-	wsc.SendMessage(
-		NewPacketBuilder(0x1, 0x01).WithUint(u.id).
-			Build())
+	// wsc.SendMessage(
+	// 	NewPacketBuilder(u.id, 0x00).
+	// 		Build())
+	// wsc.SendMessage(
+	// 	NewPacketBuilder(0x1, 0x01).WithUint(u.id).
+	// 		Build())
 }
 
 func (u *Buffer) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage) error {

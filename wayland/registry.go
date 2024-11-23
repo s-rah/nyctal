@@ -52,29 +52,15 @@ func (r *Registry) New(id uint32, obj Object) {
 	r.objects[id] = obj
 }
 
-func (r *Registry) FindSurfaces() []*Surface {
+func (r *Registry) FindDataDevice() *DataDevice {
 	r.lock.Lock()
 	defer r.lock.Unlock()
-	var surfaces []*Surface
 	for _, object := range r.objects {
-		if surface, ok := object.(*Surface); ok {
-			surfaces = append(surfaces, surface)
+		if seat, ok := object.(*DataDevice); ok {
+			return seat
 		}
 	}
-	return surfaces
-
-}
-
-func (r *Registry) FindXDGSurfaces() []*XDG_Surface {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-	var surfaces []*XDG_Surface
-	for _, object := range r.objects {
-		if surface, ok := object.(*XDG_Surface); ok {
-			surfaces = append(surfaces, surface)
-		}
-	}
-	return surfaces
+	return nil
 }
 
 func (r *Registry) FindSeat() *Seat {

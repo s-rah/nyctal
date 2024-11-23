@@ -3,22 +3,27 @@ package model
 import (
 	"image"
 	"nyctal/utils"
+	"time"
 )
 
 type Pointer struct {
-	MX int
-	MY int
-	OX int
-	OY int
+	MX   int
+	MY   int
+	OX   int
+	OY   int
+	Time time.Time
 }
 
-func (p *Pointer) ProcessPointerEvent(ev PointerEvent) {
-	if ev.Move != nil {
+func (p *Pointer) ProcessPointerEvent(ev PointerEvent) bool {
+	if ev.Move != nil && time.Since(p.Time).Milliseconds() > 1 {
 		p.MX = int(ev.Move.MX)
 		p.MY = int(ev.Move.MY)
 		p.OX = int(ev.Move.MX)
 		p.OY = int(ev.Move.MY)
+		p.Time = time.Now()
+		return true
 	}
+	return false
 }
 
 func (p *Pointer) ToLocalPointer(rect image.Rectangle) *Pointer {
