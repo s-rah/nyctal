@@ -56,7 +56,7 @@ func (u *Surface) read_buffer() *model.BGRA {
 	if u.pending != nil && u.pending.format == model.FormatARGB {
 
 		wl_pool := u.pending.backingPool
-		if wl_pool != nil {
+		if wl_pool != nil && wl_pool.mappedData != nil {
 
 			bounds := image.Rect(0, 0, int(u.pending.width), int(u.pending.height))
 			if u.cached == nil || len(u.damage) == 0 || bounds != u.cached.Bounds() {
@@ -64,9 +64,9 @@ func (u *Surface) read_buffer() *model.BGRA {
 					return nil
 				}
 
-				data := wl_pool.mappedData
-				img := model.NewBGRA(data[u.pending.offset:], bounds, int(u.pending.stride))
+				img := model.NewBGRA(wl_pool.mappedData[u.pending.offset:], bounds, int(u.pending.stride))
 				u.cached = img
+
 			} else {
 
 				for _, damage := range u.damage {
@@ -85,7 +85,7 @@ func (u *Surface) read_buffer() *model.BGRA {
 					if damage.Max.X > int(u.pending.width) {
 						damage.Max.X = int(u.pending.width)
 					}
-					u.cached.Update((wl_pool.mappedData)[u.pending.offset:], damage, int(u.pending.stride))
+					u.cached.Update(wl_pool.mappedData[u.pending.offset:], damage, int(u.pending.stride))
 				}
 			}
 			return u.cached
