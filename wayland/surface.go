@@ -143,7 +143,6 @@ func (u *Surface) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage) 
 		if err := ParsePacketStructure(packet.Data, x, y, w, h); err != nil {
 			return err
 		}
-		//fmt.Printf("set window geometry?\n")
 		utils.Debug(int(wsc.id), fmt.Sprintf("surface#%d", u.id), fmt.Sprintf("damage %d %d %d %d", *x, *y, *w, *h))
 		u.damage = append(u.damage, image.Rect(int(*x), int(*y), int(*x)+int(*w), int(*y)+int(*h)))
 		return nil
@@ -156,7 +155,6 @@ func (u *Surface) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage) 
 		u.frameCallback.Push(uint32(*newId))
 		return nil
 	case 4:
-		//fmt.Printf("set input region\n")
 		regionId := NewUintField()
 		if err := ParsePacketStructure(packet.Data, regionId); err != nil {
 			return err
@@ -182,7 +180,6 @@ func (u *Surface) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage) 
 		// set buffer something...
 		return nil
 	case 8:
-		//fmt.Printf("set buffer scale\n")
 		return nil
 	case 6:
 		u.commitedInputRegion = u.pendingInputRegion

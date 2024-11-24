@@ -1,7 +1,6 @@
 package workspace
 
 import (
-	"fmt"
 	"image"
 	"image/color"
 	"nyctal/model"
@@ -118,7 +117,6 @@ func (p *SplitPanel) ProcessKeyboardEvent(pointer model.Pointer, kb model.Keyboa
 	} else {
 		downKeys := kb.DownKeys()
 		// ctrl-alt-v
-		fmt.Printf("panel down keys: %v\n", downKeys)
 		if downKeys[model.KB_CTRL] && downKeys[model.KB_ALT] && downKeys[47] {
 			utils.Debug(0, "splitpanel", "splitting vertically")
 			p.activeSplit = true
@@ -180,7 +178,6 @@ func (p *SplitPanel) ProcessPointerEvent(pointer model.Pointer, kb model.Keyboar
 			p.second.HandlePointerLeave()
 			p.focusSplit = p.first
 		} else if ptr := pointer.ToLocalPointer(secondBounds); ptr != nil {
-			fmt.Printf("panel local pointer: %v\n", ptr)
 			p.second.ProcessPointerEvent(*ptr, kb, ev)
 			p.first.HandlePointerLeave()
 			p.focusSplit = p.second

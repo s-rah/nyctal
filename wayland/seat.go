@@ -178,10 +178,7 @@ func (u *Seat) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage) err
 			return err
 		}
 		u.mouse = &Pointer{server: u.server, id: uint32(*mouse_id)}
-		fmt.Printf("newseatmouse id %v\n", u.mouse)
-
 		wsc.registry.New(uint32(*mouse_id), u.mouse)
-
 		utils.Debug(int(wsc.id), "wl_seat", fmt.Sprintf("get_pointer#%d", u.mouse))
 		return nil
 	case 1:

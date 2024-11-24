@@ -31,6 +31,7 @@ import (
 	"unsafe"
 
 	"nyctal/model"
+	"nyctal/utils"
 	"nyctal/wayland"
 	"nyctal/workspace"
 )
@@ -91,7 +92,7 @@ func Keyboard(window *C.struct_mfb_window, key C.mfb_key, mod C.mfb_key_mod, isP
 	switch key {
 	case C.KB_KEY_ESCAPE:
 		running = false
-		fmt.Printf("closing...%v\n", time.Now())
+		utils.Debug(0, "nyctal", fmt.Sprintf("closing...%v\n", time.Now()))
 		return
 	}
 
@@ -157,7 +158,7 @@ func main() {
 	if *cpuprofile != "" {
 		f, err := os.Create(*cpuprofile)
 		if err != nil {
-			fmt.Printf("[error] %s", err)
+			utils.Error(0, "nyctal", err.Error())
 			os.Exit(1)
 		}
 		pprof.StartCPUProfile(f)
@@ -194,13 +195,13 @@ func main() {
 
 	ws, err := wayland.NewServer("/tmp/nyctal/nyctal-0", wspace)
 	if err != nil {
-		fmt.Printf("[error] %s\n", err)
+		utils.Error(0, "nyctal", err.Error())
 		os.Exit(1)
 	}
 	go ws.Listen()
 	//wspace.ProcessFocus()
 
-	fmt.Printf("Starting nyctal-x11...\n")
+	utils.Debug(0, "nyctal", "Starting nyctal-x11...\n")
 	lastFrame := time.Now()
 	// this is the minifb loop
 
@@ -210,7 +211,6 @@ func main() {
 		// there is no point in attempting to generate frames any faster than 200fps
 		// todo: in the future we should replace this with a NeedsRender() check
 		if time.Since(lastFrame) >= time.Millisecond*20 {
-			//pprof.Lookup("heap").WriteTo(os.Stderr, 1)
 			// // // this will be set to false if the esc key is pressed
 			// if ws, ok := wspace.(*workspace.Workspace); ok {
 			// 	if ws.Quit {

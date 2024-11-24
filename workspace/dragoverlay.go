@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/color"
 	"nyctal/model"
+	"nyctal/utils"
 	"os"
 	"os/exec"
 )
@@ -37,7 +38,7 @@ func (do *DragOverlay) ProcessKeyboardEvent(pointer model.Pointer, kb model.Keyb
 			stdoutStderr, err := cmd.CombinedOutput()
 			if err != nil {
 			}
-			fmt.Printf("Error: %s %v\n", stdoutStderr, err)
+			utils.Debug(0, "dragoverlay", fmt.Sprintf("Error: %s %v\n", stdoutStderr, err))
 			os.Exit(1)
 		}()
 	}
