@@ -19,6 +19,7 @@ func Memfile(name string, b []byte) (int, []byte, error) {
 
 	data, err := unix.Mmap(fd, 0, len(b), unix.PROT_READ|unix.PROT_WRITE, unix.MAP_SHARED)
 	if err != nil {
+		unix.Close(fd)
 		return 0, nil, fmt.Errorf("mmap: %v", err)
 	}
 

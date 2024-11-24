@@ -7,6 +7,7 @@ import (
 )
 
 type DataDeviceManager struct {
+	BaseObject
 	server *WaylandServer
 	id     uint32
 }
@@ -20,7 +21,7 @@ func (u *DataDeviceManager) HandleMessage(wsc *WaylandServerConn, packet *Waylan
 			return err
 		}
 
-		utils.Debug("data_device_manager", fmt.Sprintf("create_data_source#%d", *newId))
+		utils.Debug(int(wsc.id), "data_device_manager", fmt.Sprintf("create_data_source#%d", *newId))
 		wsc.registry.New(uint32(*newId), &DataSource{id: uint32(*newId), mimetypes: make(map[string]bool)})
 		return nil
 	case 1:
@@ -31,7 +32,7 @@ func (u *DataDeviceManager) HandleMessage(wsc *WaylandServerConn, packet *Waylan
 			return err
 		}
 
-		utils.Debug("data_device_manager", fmt.Sprintf("get_data_device#%d %d", *newId, *seatId))
+		utils.Debug(int(wsc.id), "data_device_manager", fmt.Sprintf("get_data_device#%d %d", *newId, *seatId))
 
 		if obj, err := wsc.registry.Get((uint32(*seatId))); err == nil {
 			if seat, ok := obj.(*Seat); ok {

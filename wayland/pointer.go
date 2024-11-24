@@ -8,6 +8,7 @@ import (
 )
 
 type Pointer struct {
+	BaseObject
 	server  *WaylandServer
 	id      uint32
 	surface uint32
@@ -31,7 +32,7 @@ func (u *Pointer) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage) 
 		if err := ParsePacketStructure(packet.Data, serial, surface, x, y); err != nil {
 			return err
 		}
-		utils.Debug(fmt.Sprintf("pointer#%d", u.id), fmt.Sprintf("set_cursor %d %d %d %d", *serial, *surface, *x, *y))
+		utils.Debug(int(wsc.id), fmt.Sprintf("pointer#%d", u.id), fmt.Sprintf("set_cursor %d %d %d %d", *serial, *surface, *x, *y))
 		u.surface = uint32(*surface)
 		u.hotspot = image.Pt(int(*x), int(*y))
 		return nil

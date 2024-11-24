@@ -8,6 +8,7 @@ import (
 )
 
 type Keyboard struct {
+	BaseObject
 	id            uint32
 	kb            *model.Keyboard
 	activeSurface *Surface
@@ -34,16 +35,13 @@ func (u *Keyboard) SendKeyMap() {
 		WithUint(0).
 		WithUint(0)
 
-	utils.Debug(fmt.Sprintf("wl_keyboard#%d", u.id), fmt.Sprintf("keymap %d %d", 0, 0))
-	fd, _, err := utils.Memfile("nothing", []byte{0})
-	if err != nil {
-		panic(fmt.Sprintf("could not memmap %v\n", err))
-	}
-	u.wsc.SendMessageWithFd(pb.Build(), fd)
+	utils.Debug(int(u.wsc.id), fmt.Sprintf("wl_keyboard#%d", u.id), fmt.Sprintf("keymap %d %d", 0, 0))
+
+	u.wsc.SendMessageWithFd(pb.Build(), 0)
 }
 
 func (u *Keyboard) Enter(serial uint32, surface *Surface) {
-	utils.Debug("keyboard", "enter")
+	utils.Debug(int(u.wsc.id), "keyboard", "enter")
 	u.activeSurface = surface
 
 	downKeys := u.kb.DownKeys()
@@ -57,7 +55,7 @@ func (u *Keyboard) Enter(serial uint32, surface *Surface) {
 		pb.WithUint(uint32(key))
 
 	}
-	utils.Debug(fmt.Sprintf("wl_keyboard#%d", u.id), fmt.Sprintf("enter %d %d %x", serial, u.activeSurface.id, pb.Build()))
+	utils.Debug(int(u.wsc.id), fmt.Sprintf("wl_keyboard#%d", u.id), fmt.Sprintf("enter %d %d %x", serial, u.activeSurface.id, pb.Build()))
 
 	u.wsc.SendMessage(pb.Build())
 	u.sendModifiers(serial)
@@ -74,17 +72,17 @@ func (u *Keyboard) Leave(serial uint32) {
 		pb := NewPacketBuilder(u.id, 0x02).
 			WithUint(serial).
 			WithUint(u.activeSurface.id)
-		utils.Debug(fmt.Sprintf("wl_keyboard#%d", u.id), fmt.Sprintf("leave: %v", serial))
+		utils.Debug(int(u.wsc.id), fmt.Sprintf("wl_keyboard#%d", u.id), fmt.Sprintf("leave: %v", serial))
 		u.wsc.SendMessage(pb.Build())
 	}
 }
 
 func (u *Keyboard) ProcessKeyboardEvent(ev model.KeyboardEvent, serial uint32) {
-	utils.Debug(fmt.Sprintf("wl_keyboard#%d", u.id), fmt.Sprintf("key: %v", ev))
+	utils.Debug(int(u.wsc.id), fmt.Sprintf("wl_keyboard#%d", u.id), fmt.Sprintf("key: %v", ev))
 	u.kb.ProcessKeyboardEvent(ev)
 	if u.activeSurface != nil {
 
-		utils.Debug("keyboard", "processing keyboard event")
+		utils.Debug(int(u.wsc.id), "keyboard", "processing keyboard event")
 		pb := NewPacketBuilder(u.id, 0x03).
 			WithUint(serial).
 			WithUint(ev.Time).

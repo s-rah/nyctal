@@ -9,6 +9,7 @@ import (
 )
 
 type Seat struct {
+	BaseObject
 	server       *WaylandServer
 	id           uint32
 	keyboard     *Keyboard
@@ -62,7 +63,7 @@ func (s *Seat) ProcessPointerEvent(wsc *WaylandServerConn, ev model.PointerEvent
 		if is == nil {
 			if s.pointerFocus != nil {
 				s.serial += 1
-				utils.Debug(fmt.Sprintf("wl_pointer#%d", s.mouse), fmt.Sprintf("leave %d ", s.pointerFocus.surface.id))
+				utils.Debug(int(wsc.id), fmt.Sprintf("wl_pointer#%d", s.mouse), fmt.Sprintf("leave %d ", s.pointerFocus.surface.id))
 				wsc.SendMessage(NewPacketBuilder(s.mouse.id, 0x01).
 					WithUint(s.serial).
 					WithUint(s.pointerFocus.surface.id).Build())
@@ -77,11 +78,11 @@ func (s *Seat) ProcessPointerEvent(wsc *WaylandServerConn, ev model.PointerEvent
 			s.pointerFocus.hasPointer = false
 		} else if is.id != s.pointerFocus.id {
 			s.serial += 1
-			utils.Debug(fmt.Sprintf("wl_pointer#%d", s.mouse), fmt.Sprintf("leave %d ", s.pointerFocus.surface.id))
+			utils.Debug(int(wsc.id), fmt.Sprintf("wl_pointer#%d", s.mouse), fmt.Sprintf("leave %d ", s.pointerFocus.surface.id))
 			wsc.SendMessage(NewPacketBuilder(s.mouse.id, 0x01).
 				WithUint(s.serial).
 				WithUint(s.pointerFocus.surface.id).Build())
-			utils.Debug(fmt.Sprintf("wl_pointer#%d", s.mouse), fmt.Sprintf("leave %d ", s.pointerFocus.surface.id))
+			utils.Debug(int(wsc.id), fmt.Sprintf("wl_pointer#%d", s.mouse), fmt.Sprintf("leave %d ", s.pointerFocus.surface.id))
 			s.pointerFocus.hasPointer = false
 			s.pointerFocus = is
 		}
@@ -121,7 +122,7 @@ func (s *Seat) ProcessPointerEvent(wsc *WaylandServerConn, ev model.PointerEvent
 
 				}
 				wsc.SendMessage(pb.Build())
-				utils.Debug(fmt.Sprintf("wl_pointer#%d", s.mouse), fmt.Sprintf("enter %d %v", top.surface.id, ev.Move))
+				utils.Debug(int(wsc.id), fmt.Sprintf("wl_pointer#%d", s.mouse), fmt.Sprintf("enter %d %v", top.surface.id, ev.Move))
 				top.hasPointer = true
 				wsc.SendMessage(NewPacketBuilder(s.mouse.id, 0x05).Build())
 
@@ -161,7 +162,7 @@ func (s *Seat) ProcessPointerEvent(wsc *WaylandServerConn, ev model.PointerEvent
 func NewSeat(wsc *WaylandServerConn, id uint32) *Seat {
 
 	wsc.SendMessage(NewPacketBuilder(id, 0x00).WithUint(0x03).Build())
-	utils.Debug(fmt.Sprintf("wl_seat#%d", id), "capabilities")
+	utils.Debug(int(wsc.id), fmt.Sprintf("wl_seat#%d", id), "capabilities")
 	wsc.SendMessage(NewPacketBuilder(id, 0x01).WithString("default").Build())
 
 	return &Seat{id: id}
@@ -181,7 +182,7 @@ func (u *Seat) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage) err
 
 		wsc.registry.New(uint32(*mouse_id), u.mouse)
 
-		utils.Debug("wl_seat", fmt.Sprintf("get_pointer#%d", u.mouse))
+		utils.Debug(int(wsc.id), "wl_seat", fmt.Sprintf("get_pointer#%d", u.mouse))
 		return nil
 	case 1:
 		keyboard_id := NewUintField()
@@ -190,7 +191,7 @@ func (u *Seat) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage) err
 		}
 		kbid := uint32(*keyboard_id)
 		u.keyboard = NewKeyboard(kbid, wsc)
-		utils.Debug("wl_seat", fmt.Sprintf("get_keyboard#%d", u.keyboard.id))
+		utils.Debug(int(wsc.id), "wl_seat", fmt.Sprintf("get_keyboard#%d", u.keyboard.id))
 		return nil
 	default:
 		return fmt.Errorf("unknown opcode called on wl_seat: %v", packet.Opcode)

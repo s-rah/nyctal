@@ -4,12 +4,9 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net"
-	"runtime/debug"
-
-	"sync"
+	"sync/atomic"
 
 	"syscall"
-	//"time"
 
 	"golang.org/x/sys/unix"
 
@@ -17,35 +14,37 @@ import (
 	"nyctal/utils"
 )
 
+type Pingable interface {
+	Ping()
+}
+
 type WaylandServerConn struct {
-	socket    net.Conn
-	registry  *Registry
-	id        model.GlobalIdx
-	fds       *utils.Queue[int]
-	writeLock sync.Mutex
+	socket     net.Conn
+	registry   *Registry
+	id         model.GlobalIdx
+	fds        *utils.Queue[int]
+	connFd     int
+	index      *atomic.Uint32
+	pingtarget Pingable
+	errors     int
 }
 
 func (c *WaylandServerConn) SendMessageWithFd(data []byte, fd int) {
-	connFd, _ := getConnFd(c.socket.(*net.UnixConn))
+	utils.Debug(int(c.id), "send-wayland-message-with-fd", fmt.Sprintf("%d %x", c.id, data))
 	rights := syscall.UnixRights([]int{fd}...)
-	syscall.Sendmsg(connFd, data, rights, nil, 0)
+	syscall.Sendmsg(c.connFd, data, rights, nil, 0)
 }
 
 func (c *WaylandServerConn) SendMessage(data []byte) {
-	c.writeLock.Lock()
-	defer c.writeLock.Unlock()
-	utils.Debug("wayland-message", fmt.Sprintf("%d %x", c.id, data))
-	n, err := c.socket.Write(data)
-	if err != nil || n != len(data) {
-		debug.PrintStack()
-		panic(fmt.Sprintf("ERROR WRITING: %v %v\n", n, err))
-	}
+	utils.Debug(int(c.id), "send-wayland-message", fmt.Sprintf("%d %x", c.id, data))
+	syscall.Sendmsg(c.connFd, data, nil, nil, 0)
 }
 
 func (c *WaylandServerConn) RecvMsg(connFd int, p []byte) (int, error) {
 
 	b := make([]byte, unix.CmsgSpace(4))
-	syscall.SetNonblock(connFd, false)
+
+	syscall.SetsockoptTimeval(connFd, syscall.SOL_SOCKET, syscall.SO_RCVTIMEO, &syscall.Timeval{Sec: 2})
 	n, oobn, flags, _, err := syscall.Recvmsg(connFd, p, b, 0)
 
 	// parse socket control message
@@ -56,53 +55,37 @@ func (c *WaylandServerConn) RecvMsg(connFd int, p []byte) (int, error) {
 		}
 		fds, err := unix.ParseUnixRights(&cmsgs[0])
 		if err != nil {
-			fmt.Printf("ERROR %v %v %v\n", cmsgs, flags, err)
 			return -1, fmt.Errorf("ERROR PUR %v %v %v", cmsgs, flags, err)
 		}
 		for _, fd := range fds {
-			fmt.Printf("pushing fd (%d)\n", fd)
 			c.fds.Push(fd)
 		}
-		if n != 8 {
-			return c.RecvMsg(connFd, p)
-		}
+
 	}
 
-	if n == 0 {
-		return -1, fmt.Errorf("ERROR %v %v %v", n, oobn, err)
-	}
-	if n == -1 {
-		//==time.Sleep(time.Millisecond)
-		//return c.RecvMsg(connFd, p)
-	}
 	return n, err
 }
 
 func (c *WaylandServerConn) ReadPacket() (*WaylandMessage, error) {
 
-	connFd, err := getConnFd(c.socket.(*net.UnixConn))
-	if err != nil {
-		return nil, fmt.Errorf("could not get conn fd: %v", err)
-	}
-
 	p := make([]byte, 8)
 
-	n, err := c.RecvMsg(connFd, p)
+	n, err := c.RecvMsg(c.connFd, p)
 
 	if err != nil {
 		return nil, fmt.Errorf("expected 8 got %d: %v", n, err)
 	}
 
 	if n == -1 {
-		return c.ReadPacket()
+		return nil, fmt.Errorf("returned -1")
 	}
 
 	if n == 0 {
-		return c.ReadPacket()
+		return nil, fmt.Errorf("returned 0")
 	}
 
 	if n != 8 {
-		return c.ReadPacket()
+		return nil, fmt.Errorf("unexpectd number of bytes")
 	}
 
 	msg := &WaylandMessage{}
@@ -112,13 +95,13 @@ func (c *WaylandServerConn) ReadPacket() (*WaylandMessage, error) {
 	msg.Length -= 8
 	if msg.Length > 0 {
 		p = make([]byte, msg.Length)
-		n, err = c.RecvMsg(connFd, p)
+		n, err = c.RecvMsg(c.connFd, p)
 		if err != nil {
 			return nil, err
 		}
 
 		if n == -1 {
-			return c.ReadPacket()
+			return nil, fmt.Errorf("none")
 		}
 
 		if n != int(msg.Length) {

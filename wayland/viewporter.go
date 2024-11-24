@@ -3,6 +3,7 @@ package wayland
 import "fmt"
 
 type WPViewporter struct {
+	BaseObject
 	id uint32
 }
 

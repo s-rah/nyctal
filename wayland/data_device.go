@@ -3,6 +3,7 @@ package wayland
 import "fmt"
 
 type DataDevice struct {
+	BaseObject
 	server    *WaylandServer
 	id        uint32
 	seat      *Seat

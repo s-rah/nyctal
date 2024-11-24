@@ -7,6 +7,7 @@ import (
 )
 
 type SubCompositor struct {
+	BaseObject
 	server *WaylandServer
 }
 
@@ -23,7 +24,7 @@ func (u *SubCompositor) HandleMessage(wsc *WaylandServerConn, packet *WaylandMes
 		if err := ParsePacketStructure(packet.Data, newId, surface, parent); err != nil {
 			return err
 		}
-		utils.Debug("compositor", fmt.Sprintf("create_subsurface#%d", newId))
+		utils.Debug(int(wsc.id), "compositor", fmt.Sprintf("create_subsurface#%d", newId))
 
 		if surface, err := wsc.registry.Get(uint32(*surface)); err == nil {
 			if surfaceObj, ok := surface.(*Surface); ok {

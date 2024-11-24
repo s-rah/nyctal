@@ -140,7 +140,11 @@ func ParsePacketStructure(buf []byte, fields ...Field) error {
 					*f = strfield
 				}
 				ptr := 4 + ide
-				buf = buf[ptr:]
+				if len(buf) >= int(ptr) {
+					buf = buf[ptr:]
+				} else {
+					return fmt.Errorf("could not parse packet structure")
+				}
 			} else {
 				return fmt.Errorf("could not parse packet structure")
 			}

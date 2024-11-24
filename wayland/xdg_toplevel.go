@@ -8,6 +8,7 @@ import (
 )
 
 type XDG_Toplevel struct {
+	BaseObject
 	server *WaylandServer
 	id     uint32
 	title  string
@@ -45,7 +46,7 @@ func (u *XDG_Toplevel) HandleMessage(wsc *WaylandServerConn, packet *WaylandMess
 		}
 
 		u.title = string(*title)
-		utils.Debug("xdg_toplevel", "set_title: "+u.title)
+		utils.Debug(int(wsc.id), "xdg_toplevel", "set_title: "+u.title)
 		return nil
 	case 3:
 		// set app_id

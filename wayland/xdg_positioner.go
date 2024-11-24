@@ -8,6 +8,7 @@ import (
 )
 
 type XDG_Positioner struct {
+	BaseObject
 	id                   uint32
 	size                 image.Rectangle
 	anchorRect           image.Rectangle
@@ -45,7 +46,7 @@ func (u *XDG_Positioner) HandleMessage(wsc *WaylandServerConn, packet *WaylandMe
 		if err := ParsePacketStructure(packet.Data, w, h); err != nil {
 			return err
 		}
-		utils.Debug(fmt.Sprintf("xdg_positioner#%d", u.id), fmt.Sprintf("set_size %d %d", uint32(*w), uint32(*h)))
+		utils.Debug(int(wsc.id), fmt.Sprintf("xdg_positioner#%d", u.id), fmt.Sprintf("set_size %d %d", uint32(*w), uint32(*h)))
 		u.size = image.Rect(0, 0, int(*w), int(*h))
 		return nil
 	case 2:
@@ -56,7 +57,7 @@ func (u *XDG_Positioner) HandleMessage(wsc *WaylandServerConn, packet *WaylandMe
 		if err := ParsePacketStructure(packet.Data, x, y, w, h); err != nil {
 			return err
 		}
-		utils.Debug(fmt.Sprintf("xdg_positioner#%d", u.id), fmt.Sprintf("set_anchor_rect %d %d %d %d", int32(*x), int32(*y), int32(*w), int32(*h)))
+		utils.Debug(int(wsc.id), fmt.Sprintf("xdg_positioner#%d", u.id), fmt.Sprintf("set_anchor_rect %d %d %d %d", int32(*x), int32(*y), int32(*w), int32(*h)))
 		u.anchorRect = image.Rect(int(*x), int(*y), int(*x)+int(*w), int(*y)+int(*h))
 		return nil
 	case 3:
@@ -64,7 +65,7 @@ func (u *XDG_Positioner) HandleMessage(wsc *WaylandServerConn, packet *WaylandMe
 		if err := ParsePacketStructure(packet.Data, x); err != nil {
 			return err
 		}
-		utils.Debug(fmt.Sprintf("xdg_positioner#%d", u.id), fmt.Sprintf("set_anchor %d", uint32(*x)))
+		utils.Debug(int(wsc.id), fmt.Sprintf("xdg_positioner#%d", u.id), fmt.Sprintf("set_anchor %d", uint32(*x)))
 		u.anchor = uint32(*x)
 		return nil
 	case 4:
@@ -72,7 +73,7 @@ func (u *XDG_Positioner) HandleMessage(wsc *WaylandServerConn, packet *WaylandMe
 		if err := ParsePacketStructure(packet.Data, x); err != nil {
 			return err
 		}
-		utils.Debug(fmt.Sprintf("xdg_positioner#%d", u.id), fmt.Sprintf("set_gravity %d", uint32(*x)))
+		utils.Debug(int(wsc.id), fmt.Sprintf("xdg_positioner#%d", u.id), fmt.Sprintf("set_gravity %d", uint32(*x)))
 		u.gravity = uint32(*x)
 		return nil
 	case 5:
@@ -80,7 +81,7 @@ func (u *XDG_Positioner) HandleMessage(wsc *WaylandServerConn, packet *WaylandMe
 		if err := ParsePacketStructure(packet.Data, x); err != nil {
 			return err
 		}
-		utils.Debug(fmt.Sprintf("xdg_positioner#%d", u.id), fmt.Sprintf("set_constraint_adjustment %d", uint32(*x)))
+		utils.Debug(int(wsc.id), fmt.Sprintf("xdg_positioner#%d", u.id), fmt.Sprintf("set_constraint_adjustment %d", uint32(*x)))
 		u.constraintAdjustment = uint32(*x)
 		return nil
 	case 6:
@@ -89,11 +90,11 @@ func (u *XDG_Positioner) HandleMessage(wsc *WaylandServerConn, packet *WaylandMe
 		if err := ParsePacketStructure(packet.Data, x, y); err != nil {
 			return err
 		}
-		utils.Debug(fmt.Sprintf("xdg_positioner#%d", u.id), fmt.Sprintf("offset %d %d", int32(*x), int32(*y)))
+		utils.Debug(int(wsc.id), fmt.Sprintf("xdg_positioner#%d", u.id), fmt.Sprintf("offset %d %d", int32(*x), int32(*y)))
 		u.offset = image.Pt(int(*x), int(*y))
 		return nil
 	case 7:
-		utils.Debug(fmt.Sprintf("xdg_positioner#%d", u.id), "set_reactive")
+		utils.Debug(int(wsc.id), fmt.Sprintf("xdg_positioner#%d", u.id), "set_reactive")
 		u.reactive = true
 		return nil
 	case 8:

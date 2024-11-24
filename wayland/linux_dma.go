@@ -2,11 +2,11 @@ package wayland
 
 import (
 	"fmt"
-	"nyctal/utils"
 )
 
 // NOTE: Prototype Code...
 type LinuxDMABuf struct {
+	BaseObject
 	server *WaylandServer
 }
 
@@ -48,6 +48,7 @@ func (u *LinuxDMABuf) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessa
 }
 
 type LinuxDMABufParams struct {
+	BaseObject
 	id uint32
 }
 
@@ -67,23 +68,24 @@ func (u *LinuxDMABufParams) HandleMessage(wsc *WaylandServerConn, packet *Waylan
 }
 
 type LinuxDMABufFeedback struct {
+	BaseObject
 	id        uint32
 	surfaceId uint32
 }
 
 func NewLinuxDMABufFeedback(id uint32, surfaceId uint32, wsc *WaylandServerConn) *LinuxDMABufFeedback {
-	formatTable := []byte{'X', 'R', '2', '4', 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		'A', 'R', '2', '4', 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+	// formatTable := []byte{'X', 'R', '2', '4', 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	// 	'A', 'R', '2', '4', 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
 
-	formatFile, _, _ := utils.Memfile("format", formatTable)
+	// formatFile, _, _ := utils.Memfile("format", formatTable)
 
-	wsc.SendMessageWithFd(NewPacketBuilder(id, 0x01).WithUint(uint32(len(formatTable))).Build(), int(formatFile)) // send format table..
-	wsc.SendMessage(NewPacketBuilder(id, 0x02).WithU64Array([]uint64{0xE200}).Build())                            // send main device
-	wsc.SendMessage(NewPacketBuilder(id, 0x04).WithU64Array([]uint64{0xE200}).Build())                            // send tranche table..
-	wsc.SendMessage(NewPacketBuilder(id, 0x05).WithU16Array([]uint16{0x00, 0x01}).Build())
-	wsc.SendMessage(NewPacketBuilder(id, 0x06).WithUint(0).Build())
-	wsc.SendMessage(NewPacketBuilder(id, 0x03).Build()) // tranche done
-	wsc.SendMessage(NewPacketBuilder(id, 0x00).Build()) // tranche done
+	// wsc.SendMessageWithFd(NewPacketBuilder(id, 0x01).WithUint(uint32(len(formatTable))).Build(), int(formatFile)) // send format table..
+	// wsc.SendMessage(NewPacketBuilder(id, 0x02).WithU64Array([]uint64{0xE200}).Build())                            // send main device
+	// wsc.SendMessage(NewPacketBuilder(id, 0x04).WithU64Array([]uint64{0xE200}).Build())                            // send tranche table..
+	// wsc.SendMessage(NewPacketBuilder(id, 0x05).WithU16Array([]uint16{0x00, 0x01}).Build())
+	// wsc.SendMessage(NewPacketBuilder(id, 0x06).WithUint(0).Build())
+	// wsc.SendMessage(NewPacketBuilder(id, 0x03).Build()) // tranche done
+	// wsc.SendMessage(NewPacketBuilder(id, 0x00).Build()) // tranche done
 	return &LinuxDMABufFeedback{id: id, surfaceId: surfaceId}
 }
 

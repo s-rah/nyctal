@@ -16,19 +16,21 @@ type Area struct {
 //
 // Region objects are used to describe the opaque and input  regions of a surface.
 type Region struct {
+	BaseObject
 	id    uint32
 	rects *utils.Stack[Area]
+	wsc   *WaylandServerConn
 }
 
-func NewRegion(id uint32) *Region {
-	return &Region{id: id, rects: utils.NewStack[Area]()}
+func NewRegion(id uint32, wsc *WaylandServerConn) *Region {
+	return &Region{id: id, rects: utils.NewStack[Area](), wsc: wsc}
 }
 
 // Returns two booleans. The first indicates if the point intersects with a  sub-area
 // the second indicates if the area was part of the defined region.
 // This is needed because input areas and opaque areas are defined by different defaults.
 func (u *Region) Intersects(point image.Point) (bool, bool) {
-	utils.Debug(fmt.Sprintf("region#%d", u.id), fmt.Sprintf("computing intersection %v", point))
+	utils.Debug(int(u.wsc.id), fmt.Sprintf("region#%d", u.id), fmt.Sprintf("computing intersection %v", point))
 	areas := u.rects.Inner()
 	slices.Reverse(areas)
 	for _, area := range areas {

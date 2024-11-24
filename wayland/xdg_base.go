@@ -2,13 +2,20 @@ package wayland
 
 import (
 	"fmt"
+	"time"
 
 	"nyctal/utils"
 )
 
 type XDG_Base struct {
+	BaseObject
 	server *WaylandServer
+	wsc    *WaylandServerConn
 	id     uint32
+}
+
+func (u *XDG_Base) Ping() {
+	u.wsc.SendMessage(NewPacketBuilder(u.id, 0x00).WithUint(uint32(time.Now().UnixMilli())).Build())
 }
 
 func (u *XDG_Base) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage) error {
@@ -23,7 +30,7 @@ func (u *XDG_Base) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage)
 		if err := ParsePacketStructure(packet.Data, new_id); err != nil {
 			return err
 		}
-		utils.Debug("xdg_wm_base", fmt.Sprintf("create_positioner %d", *new_id))
+		utils.Debug(int(wsc.id), "xdg_wm_base", fmt.Sprintf("create_positioner %d", *new_id))
 		xdg_positioner := &XDG_Positioner{id: uint32(*new_id)}
 		wsc.registry.New(uint32(*new_id), xdg_positioner)
 		return nil
@@ -35,7 +42,7 @@ func (u *XDG_Base) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage)
 		}
 
 		// received create pool message...
-		utils.Debug("xdg_wm_base", fmt.Sprintf("get_xdg_surface %d %d", new_id, surface_id))
+		utils.Debug(int(wsc.id), "xdg_wm_base", fmt.Sprintf("get_xdg_surface %d %d", new_id, surface_id))
 
 		if surface, err := wsc.registry.Get(uint32(*surface_id)); err == nil {
 			if surfaceObj, ok := surface.(*Surface); ok {

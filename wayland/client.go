@@ -46,7 +46,7 @@ func (wc *WaylandClient) Resize(width int, height int) {
 	if wc.attemptedWindowgeometry.Dx() != width || wc.attemptedWindowgeometry.Dy() != height {
 		wc.attemptedWindowgeometry = image.Rect(0, 0, width, height)
 		if wc.surface.windowGeometry.Dx() != width || wc.surface.windowGeometry.Dy() != height {
-			utils.Debug(fmt.Sprintf("wayland_client#%d", wc.id), fmt.Sprintf("resizing %d %d %v", width, height, wc.surface))
+			utils.Debug(int(wc.wsc.id), "client", fmt.Sprintf("resizing %d %d %v", width, height, wc.surface))
 			wc.surface.Resize(wc.wsc, width, height)
 		}
 	}
@@ -80,15 +80,15 @@ func (wc *WaylandClient) Subsurfaces(subsurface *SubSurface, wg image.Point, buf
 		}
 		subsurface.surface.RenderFrame(wc.wsc, []byte{0, 0, 0, 0})
 	} else {
-		utils.Debug("client", "could not render subsurface...")
+		utils.Debug(int(wc.wsc.id), "client", "could not render subsurface...")
 	}
 
 }
 
 func (wc *WaylandClient) Buffer(buffer *model.BGRA, width int, height int) {
-
+	utils.Debug(int(wc.wsc.id), "client", "preparing buffer")
 	wc.Resize(width, height)
-
+	utils.Debug(int(wc.wsc.id), "client", "ongoing...")
 	wl_surface := wc.surface.surface
 	img := wl_surface.cached
 	if img != nil {
@@ -126,7 +126,7 @@ func (wc *WaylandClient) Buffer(buffer *model.BGRA, width int, height int) {
 				buffer.DrawRect(atZero.Min.X, atZero.Min.Y, atZero.Max.X, atZero.Max.Y, color.RGBA{B: 255})
 				wl_surface.RenderFrame(wc.wsc, serial)
 			} else {
-				utils.Debug("client", "could not render popup...")
+				utils.Debug(int(wc.wsc.id), "client", "could not render popup...")
 			}
 
 		}
@@ -151,6 +151,8 @@ func (wc *WaylandClient) Buffer(buffer *model.BGRA, width int, height int) {
 			}
 		}
 
+	} else {
+		utils.Debug(int(wc.wsc.id), "client", "could not  subsurface...")
 	}
 }
 

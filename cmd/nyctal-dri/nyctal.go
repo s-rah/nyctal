@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"image"
 	"os"
 	"os/exec"
 
@@ -17,7 +18,10 @@ import (
 	"nyctal/workspace"
 )
 
-func SetupMouse(workspace model.Client) func() error {
+var POINTER model.Pointer
+var KEYBOARD = model.NewKeyboardModel()
+
+func SetupMouse(workspace model.Workspace) func() error {
 
 	mouseDev := evdev.FindMouseDevice()
 	if mouseDev != "" {
@@ -39,9 +43,10 @@ func SetupMouse(workspace model.Client) func() error {
 					utils.Debug("mouse handler", fmt.Sprintf("type %d code %d", ev.Type, ev.Code))
 					switch ev.Type {
 					case evdev.EvKey:
-						workspace.ProcessPointerEvent(model.PointerEvent{
-							Button: &model.PointerButtonEvent{Time: uint32(time.Now().UnixMilli()), Button: uint32(ev.Code), State: uint32(ev.Value)},
-						})
+						pev := model.PointerEvent{
+							Button: &model.PointerButtonEvent{Time: uint32(time.Now().UnixMilli()), Button: uint32(ev.Code), State: uint32(ev.Value)}}
+						POINTER.ProcessPointerEvent(pev)
+						workspace.ProcessPointerEvent(POINTER, *KEYBOARD, pev)
 					case evdev.EvRel:
 						if ev.Code == 0x00 {
 							// abs x
@@ -49,9 +54,11 @@ func SetupMouse(workspace model.Client) func() error {
 							if localX < 0 {
 								localX = 0
 							}
-							workspace.ProcessPointerEvent(model.PointerEvent{
+							pev := model.PointerEvent{
 								Move: &model.PointerMoveEvent{Time: uint32(time.Now().UnixMilli()), MX: localX, MY: localY},
-							})
+							}
+							POINTER.ProcessPointerEvent(pev)
+							workspace.ProcessPointerEvent(POINTER, *KEYBOARD, pev)
 						}
 						if ev.Code == 0x01 {
 							// abs y
@@ -59,14 +66,18 @@ func SetupMouse(workspace model.Client) func() error {
 							if localY < 0 {
 								localY = 0
 							}
-							workspace.ProcessPointerEvent(model.PointerEvent{
+							pev := model.PointerEvent{
 								Move: &model.PointerMoveEvent{Time: uint32(time.Now().UnixMilli()), MX: localX, MY: localY},
-							})
+							}
+							POINTER.ProcessPointerEvent(pev)
+							workspace.ProcessPointerEvent(POINTER, *KEYBOARD, pev)
 						}
 						if ev.Code == 0x08 {
-							workspace.ProcessPointerEvent(model.PointerEvent{
+							pev := model.PointerEvent{
 								Axis: &model.PointerAxisEvent{Time: uint32(time.Now().UnixMilli()), Value: float32(ev.Value)},
-							})
+							}
+							POINTER.ProcessPointerEvent(pev)
+							workspace.ProcessPointerEvent(POINTER, *KEYBOARD, pev)
 						}
 					}
 
@@ -82,7 +93,7 @@ func SetupMouse(workspace model.Client) func() error {
 }
 
 // see include/uapi/linux/input-event-codes.h
-func SetupInput(workspace model.Client) func() error {
+func SetupInput(workspace model.Workspace) func() error {
 
 	kdev := evdev.FindAllKeyboardDevices()
 	if len(kdev) > 0 {
@@ -101,7 +112,9 @@ func SetupInput(workspace model.Client) func() error {
 					//	utils.Debug("input handler", "waiting...")
 					ev := <-dev.Input
 					utils.Debug("input handler", fmt.Sprintf("type %d code %d value: %d", ev.Type, ev.Code, ev.Value))
-					workspace.ProcessKeyboardEvent(model.KeyboardEvent{Time: uint32(time.Now().UnixMilli()), Key: uint32(ev.Code), State: uint32(ev.Value)})
+					kev := model.KeyboardEvent{Time: uint32(time.Now().UnixMilli()), Key: uint32(ev.Code), State: uint32(ev.Value)}
+					KEYBOARD.ProcessKeyboardEvent(kev)
+					workspace.ProcessKeyboardEvent(POINTER, *KEYBOARD, kev)
 				}
 			}()
 			return f
@@ -115,16 +128,16 @@ func main() {
 	debug.SetPanicOnFault(false)
 
 	var output model.Output
-	wspace := workspace.NewWorkspace(1280, 1024)
-
+	wspace := workspace.NewDragOverlay()
+	width, height := uint32(1024), uint32(1024)
 	rm := DrmInit()
 	if rm == nil {
 		fmt.Printf("[error] could not initialize drm rendering\n")
 		output = NewImageOutput("nyctal-", time.Second*5)
 	} else {
 		output = rm
-		width, height := rm.Stats()
-		wspace = workspace.NewWorkspace(int(width), int(height))
+		width, height = rm.Stats()
+		wspace = workspace.NewDragOverlay()
 		utils.Debug("ori", fmt.Sprintf("dri established %v %v", width, height))
 	}
 
@@ -142,7 +155,6 @@ func main() {
 	defer closeInput()
 	closeMInput := SetupMouse(wspace)
 	defer closeMInput()
-	wspace.ProcessFocus()
 
 	fmt.Printf("Starting Nyctal...\n")
 	lastFrame := time.Now()
@@ -162,9 +174,9 @@ func main() {
 		// there is no point in attempting to generate frames any faster than 200fps
 		// todo: in the future we should replace this with a NeedsRender() check
 		if time.Since(lastFrame) >= time.Millisecond*5 {
-			buffer := wspace.Buffer()
+			buffer := model.EmptyBGRA(image.Rect(0, 0, int(width), int(height)))
+			wspace.Buffer(buffer, int(width), int(height))
 			output.RenderBuffer(buffer)
-			wspace.AckFrame()
 			lastFrame = time.Now()
 		}
 	}

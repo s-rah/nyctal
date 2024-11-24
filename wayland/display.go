@@ -6,6 +6,7 @@ import (
 )
 
 type Display struct {
+	BaseObject
 	server   *WaylandServer
 	lastSync int
 }

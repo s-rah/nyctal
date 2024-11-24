@@ -5,6 +5,7 @@ import (
 )
 
 type Output struct {
+	BaseObject
 	id uint32
 }
 

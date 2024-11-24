@@ -7,6 +7,7 @@ import (
 )
 
 type XDGPopup struct {
+	BaseObject
 	id         uint32
 	server     *WaylandServer
 	parent     *XDG_Surface
@@ -25,7 +26,7 @@ func (xp *XDGPopup) Configure(wsc *WaylandServerConn) {
 		WithUint(uint32(xp.positioner.size.Dy())).
 		Build())
 	xp.configured = true
-	utils.Debug(fmt.Sprintf("xdg_popup#%d", xp.id), "configure")
+	utils.Debug(int(wsc.id), fmt.Sprintf("xdg_popup#%d", xp.id), "configure")
 
 	xp.surface.Configure(wsc)
 	xp.parent.Configure(wsc)
@@ -49,7 +50,7 @@ func (u *XDGPopup) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage)
 		if err := ParsePacketStructure(packet.Data, x); err != nil {
 			return err
 		}
-		utils.Debug(fmt.Sprintf("xdg_popup#%d", u.id), fmt.Sprintf("grab seat#%d", uint32(*x)))
+		utils.Debug(int(wsc.id), fmt.Sprintf("xdg_popup#%d", u.id), fmt.Sprintf("grab seat#%d", uint32(*x)))
 		gseat := uint32(*x)
 		if seat := wsc.registry.FindSeat(); seat != nil && seat.id == gseat {
 			seat.Grab(u.surface)

@@ -3,6 +3,7 @@ package wayland
 import "fmt"
 
 type DataSource struct {
+	BaseObject
 	id        uint32
 	mimetypes map[string]bool
 }

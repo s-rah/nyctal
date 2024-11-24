@@ -1,11 +1,8 @@
 package model
 
 import (
-	"fmt"
 	"image"
 	"image/color"
-
-	"nyctal/utils"
 )
 
 type Format int
@@ -68,7 +65,6 @@ func (i *BGRA) DrawRect(x1, y1, x2, y2 int, col color.RGBA) {
 func (i *BGRA) Update(pixels []byte, damage image.Rectangle, stride int) {
 
 	if i.Bounds().Max.X < damage.Bounds().Min.X {
-		utils.Debug("cached image", fmt.Sprintf("OOB damaged buffer: %v %v %v", i.Bounds(), damage, stride))
 		return
 	}
 

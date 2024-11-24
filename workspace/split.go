@@ -120,7 +120,7 @@ func (p *SplitPanel) ProcessKeyboardEvent(pointer model.Pointer, kb model.Keyboa
 		// ctrl-alt-v
 		fmt.Printf("panel down keys: %v\n", downKeys)
 		if downKeys[model.KB_CTRL] && downKeys[model.KB_ALT] && downKeys[47] {
-			utils.Debug("splitpanel", "splitting vertically")
+			utils.Debug(0, "splitpanel", "splitting vertically")
 			p.activeSplit = true
 			p.splitAt = 0.5
 			prev := p.first
@@ -128,7 +128,7 @@ func (p *SplitPanel) ProcessKeyboardEvent(pointer model.Pointer, kb model.Keyboa
 			p.second = NewSplitPanel(NewWindowPanel(p.do), p.do)
 			p.splitHorizontal = false
 		} else if downKeys[model.KB_CTRL] && downKeys[model.KB_ALT] && downKeys[35] {
-			utils.Debug("splitpanel", "splitting horizontally")
+			utils.Debug(0, "splitpanel", "splitting horizontally")
 			p.activeSplit = true
 			p.splitAt = 0.5
 			prev := p.first

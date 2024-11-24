@@ -10,6 +10,7 @@ import (
 )
 
 type Surface struct {
+	BaseObject
 	id            uint32
 	frameCallback utils.Queue[uint32]
 
@@ -29,17 +30,25 @@ func (u *Surface) AddSubSurface(child_surface *SubSurface) {
 	u.children = append(u.children, child_surface)
 }
 
+func (u *Surface) Destroy() {
+	u.cached = nil
+}
+
 func (u *Surface) read_buffer() *model.BGRA {
 
 	if u.pending != nil && u.pending.format == model.FormatARGB {
 
-		wl_pool := u.pending.backing
+		wl_pool := u.pending.backingPool
 		if wl_pool != nil {
 
 			bounds := image.Rect(0, 0, int(u.pending.width), int(u.pending.height))
 			if u.cached == nil || len(u.damage) == 0 || bounds != u.cached.Bounds() {
+				if bounds.Dy()*int(u.pending.stride) > 2048*2048*16 {
+					return nil
+				}
 
-				img := model.NewBGRA(wl_pool.data[u.pending.offset:], bounds, int(u.pending.stride))
+				data := wl_pool.mappedData
+				img := model.NewBGRA(data[u.pending.offset:], bounds, int(u.pending.stride))
 				u.cached = img
 			} else {
 
@@ -59,14 +68,12 @@ func (u *Surface) read_buffer() *model.BGRA {
 					if damage.Max.X > int(u.pending.width) {
 						damage.Max.X = int(u.pending.width)
 					}
-					u.cached.Update(wl_pool.data[u.pending.offset:], damage, int(u.pending.stride))
+					u.cached.Update((wl_pool.mappedData)[u.pending.offset:], damage, int(u.pending.stride))
 				}
 			}
 			return u.cached
 		}
-		utils.Debug("surface", "unable to find shmpool")
 	}
-	utils.Debug("surface", "unable to init buffer")
 	return nil
 }
 
@@ -81,7 +88,7 @@ func (u *Surface) RenderFrame(wsc *WaylandServerConn, serial []byte) []byte {
 				WithUint(nullserial).
 				Build())
 
-		utils.Debug(fmt.Sprintf("xdg_surface#%d", u.id), fmt.Sprintf("callback frame#%d", u.frameCallback))
+		utils.Debug(int(wsc.id), fmt.Sprintf("xdg_surface#%d", u.id), fmt.Sprintf("callback frame#%d", u.frameCallback))
 
 		wsc.SendMessage(
 			NewPacketBuilder(0x01, 0x01).
@@ -118,7 +125,7 @@ func (u *Surface) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage) 
 			return nil
 		}
 
-		utils.Debug(fmt.Sprintf("surface#%d", u.id), fmt.Sprintf("attach_buffer#%d %d %d", *bufferId, *x, *y))
+		utils.Debug(int(wsc.id), fmt.Sprintf("surface#%d", u.id), fmt.Sprintf("attach_buffer#%d %d %d", *bufferId, *x, *y))
 		if obj, err := wsc.registry.Get(uint32(*bufferId)); err == nil {
 			if buffer, ok := obj.(*Buffer); ok {
 				u.pending = buffer
@@ -137,7 +144,7 @@ func (u *Surface) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage) 
 			return err
 		}
 		//fmt.Printf("set window geometry?\n")
-		utils.Debug(fmt.Sprintf("surface#%d", u.id), fmt.Sprintf("damage %d %d %d %d", *x, *y, *w, *h))
+		utils.Debug(int(wsc.id), fmt.Sprintf("surface#%d", u.id), fmt.Sprintf("damage %d %d %d %d", *x, *y, *w, *h))
 		u.damage = append(u.damage, image.Rect(int(*x), int(*y), int(*x)+int(*w), int(*y)+int(*h)))
 		return nil
 	case 3:
@@ -145,7 +152,7 @@ func (u *Surface) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage) 
 		if err := ParsePacketStructure(packet.Data, newId); err != nil {
 			return err
 		}
-		utils.Debug(fmt.Sprintf("surface#%d", u.id), fmt.Sprintf("frame_callback#%d", *newId))
+		utils.Debug(int(wsc.id), fmt.Sprintf("surface#%d", u.id), fmt.Sprintf("frame_callback#%d", *newId))
 		u.frameCallback.Push(uint32(*newId))
 		return nil
 	case 4:
@@ -154,7 +161,7 @@ func (u *Surface) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage) 
 		if err := ParsePacketStructure(packet.Data, regionId); err != nil {
 			return err
 		}
-		utils.Debug(fmt.Sprintf("surface#%d", u.id), fmt.Sprintf("set_input_region#%d", *regionId))
+		utils.Debug(int(wsc.id), fmt.Sprintf("surface#%d", u.id), fmt.Sprintf("set_input_region#%d", *regionId))
 		rid := uint32(*regionId)
 		if rid == 0 {
 			u.pendingInputRegion = nil
@@ -194,7 +201,7 @@ func (u *Surface) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage) 
 			// compositor.
 			u.read_buffer()
 
-			u.pending.Release(wsc)
+			u.pending.Destroy()
 
 		} else if u.attached {
 			// If wl_surface.attach is sent with a NULL wl_buffer, the
@@ -206,21 +213,23 @@ func (u *Surface) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage) 
 		u.attached = false
 		u.pending = nil
 
-		utils.Debug(fmt.Sprintf("surface#%d", u.id), "commit")
+		utils.Debug(int(wsc.id), fmt.Sprintf("surface#%d", u.id), "commit")
 
-		// Pretend we are entering a surface....
-		//if !u.first {
-		//u.first = true
-		output := wsc.registry.FindOutput()
-		if output != nil && !u.first {
-			u.first = true
-			wsc.SendMessage(
-				NewPacketBuilder(u.id, 0x00).WithUint(output.id).
-					Build())
-		}
-		//dd := wsc.registry.FindDataDevice()
-		//dd.Selection(wsc)
-		//}
+		// // Pretend we are entering a surface....
+		// if !u.first {
+		// 	u.first = true
+		// 	output := wsc.registry.FindOutput()
+		// 	if output != nil && !u.first {
+		// 		u.first = true
+		// 		wsc.SendMessage(
+		// 			NewPacketBuilder(u.id, 0x00).WithUint(output.id).
+		// 				Build())
+		// 	}
+		// 	dd := wsc.registry.FindDataDevice()
+		// 	if dd != nil {
+		// 		dd.Selection(wsc)
+		// 	}
+		// }
 
 		return nil
 	case 9:

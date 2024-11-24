@@ -9,6 +9,7 @@ import (
 )
 
 type XDG_Surface struct {
+	BaseObject
 	id   uint32          // client given id
 	uniq model.GlobalIdx // compositor unique id
 
@@ -94,7 +95,7 @@ func (u *XDG_Surface) Configure(wsc *WaylandServerConn) {
 				WithUint(u.serial).
 				Build())
 
-		utils.Debug(fmt.Sprintf("xdg_surface#%d", u.id), "configure")
+		utils.Debug(int(wsc.id), fmt.Sprintf("xdg_surface#%d", u.id), "configure")
 		u.configuring = true
 	}
 }
@@ -120,12 +121,13 @@ func (u *XDG_Surface) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessa
 		if err := ParsePacketStructure(packet.Data, new_id); err != nil {
 			return err
 		}
-		utils.Debug(fmt.Sprintf("xdg_surface#%d", u.id), fmt.Sprintf("get_xdg_toplevel#%d", uint32(*new_id)))
+		utils.Debug(int(wsc.id), fmt.Sprintf("xdg_surface#%d", u.id), fmt.Sprintf("get_xdg_toplevel#%d", uint32(*new_id)))
 		topLevel := &XDG_Toplevel{server: u.server, id: uint32(*new_id)}
 		wsc.registry.New(uint32(*new_id), topLevel)
 		u.topLevel = topLevel
 
-		u.uniq = model.GlobalIdx(wsc.registry.globalIdx.Add(1))
+		uniq := wsc.index.Add(1)
+		u.uniq = model.GlobalIdx(uniq)
 		u.server.workspace.AddTopLevel(NewWaylandClient(u.uniq, wsc.id, wsc, u))
 
 		if seat := wsc.registry.FindSeat(); seat != nil {
@@ -141,7 +143,7 @@ func (u *XDG_Surface) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessa
 		if err := ParsePacketStructure(packet.Data, new_id, surface, positioner); err != nil {
 			return err
 		}
-		utils.Debug(fmt.Sprintf("xdg_surface#%d", u.id), fmt.Sprintf("get_popup#%d %d %d", uint32(*new_id), *surface, &positioner))
+		utils.Debug(int(wsc.id), fmt.Sprintf("xdg_surface#%d", u.id), fmt.Sprintf("get_popup#%d %d %d", uint32(*new_id), *surface, &positioner))
 
 		if surfaceObj, err := wsc.registry.Get(uint32(*surface)); err != nil {
 			return err
@@ -149,7 +151,7 @@ func (u *XDG_Surface) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessa
 
 			wl_positioner, _ := wsc.registry.Get(uint32(*positioner))
 			if positioner, ok := wl_positioner.(*XDG_Positioner); ok {
-				utils.Debug(fmt.Sprintf("xdg_surface#%d", u.id), fmt.Sprintf("setting_offset#%v", positioner.anchorRect))
+				utils.Debug(int(wsc.id), fmt.Sprintf("xdg_surface#%d", u.id), fmt.Sprintf("setting_offset#%v", positioner.anchorRect))
 				u.offset = positioner.CalculateAnchorPoint()
 
 				popup := &XDGPopup{server: u.server, id: uint32(*new_id), parent: parentSurface, surface: u, positioner: positioner}
@@ -179,7 +181,7 @@ func (u *XDG_Surface) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessa
 		if err := ParsePacketStructure(packet.Data, x, y, w, h); err != nil {
 			return err
 		}
-		utils.Debug(fmt.Sprintf("xdg_surface#%d", u.id), fmt.Sprintf("set_window_geometry %d %d %d %d", uint32(*x), uint32(*y), uint32(*w), uint32(*h)))
+		utils.Debug(int(wsc.id), fmt.Sprintf("xdg_surface#%d", u.id), fmt.Sprintf("set_window_geometry %d %d %d %d", uint32(*x), uint32(*y), uint32(*w), uint32(*h)))
 		u.windowGeometry = image.Rect(int(*x), int(*y), int(*x)+int(*w), int(*y)+int(*h))
 		return nil
 	case 4:

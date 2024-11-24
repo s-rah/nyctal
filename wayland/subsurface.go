@@ -8,6 +8,7 @@ import (
 )
 
 type SubSurface struct {
+	BaseObject
 	server   *WaylandServer
 	id       uint32
 	surface  *Surface
@@ -28,7 +29,7 @@ func (u *SubSurface) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessag
 		if err := ParsePacketStructure(packet.Data, x, y); err != nil {
 			return err
 		}
-		utils.Debug(fmt.Sprintf("subsurface#%d", u.id), fmt.Sprintf("set_position#%d", u.id))
+		utils.Debug(int(wsc.id), fmt.Sprintf("subsurface#%d", u.id), fmt.Sprintf("set_position#%d", u.id))
 
 		u.position = image.Pt(int(*x), int(*y))
 		return nil
@@ -38,7 +39,7 @@ func (u *SubSurface) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessag
 		if err := ParsePacketStructure(packet.Data, ref); err != nil {
 			return err
 		}
-		utils.Debug(fmt.Sprintf("subsurface#%d", u.id), fmt.Sprintf("place_above#%d", u.id))
+		utils.Debug(int(wsc.id), fmt.Sprintf("subsurface#%d", u.id), fmt.Sprintf("place_above#%d", u.id))
 		return nil
 	case 3:
 		// place below
@@ -46,15 +47,15 @@ func (u *SubSurface) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessag
 		if err := ParsePacketStructure(packet.Data, ref); err != nil {
 			return err
 		}
-		utils.Debug(fmt.Sprintf("subsurface#%d", u.id), fmt.Sprintf("place_below#%d", u.id))
+		utils.Debug(int(wsc.id), fmt.Sprintf("subsurface#%d", u.id), fmt.Sprintf("place_below#%d", u.id))
 		return nil
 	case 4:
 		u.synced = true
-		utils.Debug(fmt.Sprintf("subsurface#%d", u.id), fmt.Sprintf("set_synced#%d", u.id))
+		utils.Debug(int(wsc.id), fmt.Sprintf("subsurface#%d", u.id), fmt.Sprintf("set_synced#%d", u.id))
 		return nil
 	case 5:
 		u.synced = false
-		utils.Debug(fmt.Sprintf("subsurface#%d", u.id), fmt.Sprintf("set_desynced#%d", u.id))
+		utils.Debug(int(wsc.id), fmt.Sprintf("subsurface#%d", u.id), fmt.Sprintf("set_desynced#%d", u.id))
 		return nil
 	default:
 		return fmt.Errorf("unknown opcode called on unbound object: %v", packet.Opcode)

@@ -7,8 +7,8 @@ import (
 )
 
 type SHM struct {
-	server *WaylandServer
-	id     uint32
+	BaseObject
+	id uint32
 }
 
 func (u *SHM) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage) error {
@@ -21,15 +21,14 @@ func (u *SHM) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage) erro
 			return err
 		}
 
-		utils.Debug(fmt.Sprintf("shm#%d", u.id), fmt.Sprintf("wm_shm_pool#%d %d", *newId, *size))
+		utils.Debug(int(wsc.id), fmt.Sprintf("shm#%d", u.id), fmt.Sprintf("wm_shm_pool#%d %d", *newId, *size))
 
 		fd, err := wsc.fds.Pop()
-		fmt.Printf("pop fd (%d)\n", fd)
 		if err != nil {
 			return fmt.Errorf("expected an fd, but could not pop from queue: %v", err)
 		}
 
-		pool, err := NewSHMPool(uint32(*newId), u.server, fd, uint32(*size))
+		pool, err := NewSHMPool(uint32(*newId), wsc, fd, uint32(*size))
 		if err != nil {
 			return err
 		}

@@ -6,24 +6,29 @@ import (
 )
 
 type Buffer struct {
-	id      uint32
-	server  *WaylandServer
-	backing *SHMPool
-	width   uint32
-	height  uint32
-	stride  uint32
-	offset  uint32
-	format  model.Format
+	BaseObject
+	id          uint32
+	wsc         *WaylandServerConn
+	backingPool *SHMPool
+	width       uint32
+	height      uint32
+	stride      uint32
+	offset      uint32
+	format      model.Format
+	destroyed   bool
 }
 
-func (u *Buffer) Release(wsc *WaylandServerConn) {
+func (u *Buffer) Destroy() {
+	if !u.destroyed {
+		// u.wsc.SendMessage(
+		// 	NewPacketBuilder(u.id, 0x00).
+		// 		Build())
+		// u.wsc.SendMessage(
+		// 	NewPacketBuilder(0x1, 0x01).WithUint(u.id).
+		// 		Build())
+		u.destroyed = true
+	}
 
-	// wsc.SendMessage(
-	// 	NewPacketBuilder(u.id, 0x00).
-	// 		Build())
-	// wsc.SendMessage(
-	// 	NewPacketBuilder(0x1, 0x01).WithUint(u.id).
-	// 		Build())
 }
 
 func (u *Buffer) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage) error {

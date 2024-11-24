@@ -6,8 +6,8 @@ import (
 	"time"
 )
 
-func Debug(source string, msg string) {
+func Debug(client int, source string, msg string) {
 	//if strings.Contains(source, "seat") {
-	fmt.Printf("[debug] %s %s %s\n", time.Now().Format(time.RFC3339), source, msg)
+	fmt.Printf("[debug] %s [client#%d] %s %s\n", time.Now().Format(time.RFC3339), client, source, msg)
 	//}
 }

@@ -20,10 +20,11 @@ import (
 	"fmt"
 	"image"
 	"image/color"
-	"sync"
-
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"runtime"
+	"sync"
 
 	"runtime/pprof"
 	"time"
@@ -148,6 +149,10 @@ var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
 
 func main() {
 
+	go func() {
+		http.ListenAndServe("localhost:8080", nil)
+	}()
+
 	flag.Parse()
 	if *cpuprofile != "" {
 		f, err := os.Create(*cpuprofile)
@@ -205,6 +210,7 @@ func main() {
 		// there is no point in attempting to generate frames any faster than 200fps
 		// todo: in the future we should replace this with a NeedsRender() check
 		if time.Since(lastFrame) >= time.Millisecond*20 {
+			//pprof.Lookup("heap").WriteTo(os.Stderr, 1)
 			// // // this will be set to false if the esc key is pressed
 			// if ws, ok := wspace.(*workspace.Workspace); ok {
 			// 	if ws.Quit {
@@ -213,7 +219,6 @@ func main() {
 			// 		break
 			// 	}
 			// }
-
 			img := model.EmptyBGRA(image.Rect(0, 0, WIDTH, HEIGHT))
 			wspace.Buffer(img, WIDTH, HEIGHT)
 			bounds := img.Bounds()

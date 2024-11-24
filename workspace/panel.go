@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"nyctal/model"
 	"nyctal/utils"
-	"runtime/debug"
+
 	"sync"
 )
 
@@ -21,11 +21,7 @@ func NewWindowPanel(do *DragOverlay) model.Workspace {
 func (p *Panel) AddTopLevel(window model.TopLevelWindow) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
-	if window == nil {
-		debug.PrintStack()
-		panic("")
-	}
-	utils.Debug("panel", fmt.Sprintf("adding top window: %v", window))
+	utils.Debug(0, "panel", fmt.Sprintf("adding top window: %T %v", window, window))
 	p.windows.PushTop(window)
 }
 
@@ -43,7 +39,7 @@ func (p *Panel) GetTopLevel(idx model.GlobalIdx) model.TopLevelWindow {
 func (p *Panel) RemoveTopLevel(idx model.GlobalIdx) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
-	utils.Debug("panel", fmt.Sprintf("remove top window: %v", idx))
+	utils.Debug(0, "panel", fmt.Sprintf("remove top window: %v", idx))
 	newWindows := utils.NewQueue[model.TopLevelWindow]()
 	for !p.windows.Empty() {
 		window, err := p.windows.Pop()
@@ -57,12 +53,14 @@ func (p *Panel) RemoveTopLevel(idx model.GlobalIdx) {
 func (p *Panel) RemoveAllWithParent(pidx model.GlobalIdx) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
-	utils.Debug("panel", fmt.Sprintf("remove parent window: %v", pidx))
+	utils.Debug(0, "panel", fmt.Sprintf("remove parent window: %v", pidx))
 	newWindows := utils.NewQueue[model.TopLevelWindow]()
 	for !p.windows.Empty() {
 		window, err := p.windows.Pop()
-		if window != nil && err != nil && window.Parent() != pidx {
+		if window != nil && err == nil && window.Parent() != pidx {
 			newWindows.Push(window)
+		} else {
+			utils.Debug(0, "panel", fmt.Sprintf("removed  window: %v", window))
 		}
 	}
 	p.windows = newWindows
@@ -71,7 +69,7 @@ func (p *Panel) RemoveAllWithParent(pidx model.GlobalIdx) {
 func (p *Panel) Buffer(img *model.BGRA, width int, height int) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
-
+	utils.Debug(0, "panel", fmt.Sprintf("live windows: %v", len(p.windows.Inner())))
 	if top, exists := p.windows.Top(); exists {
 		top.Buffer(img, width, height)
 	}
