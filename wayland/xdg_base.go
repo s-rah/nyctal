@@ -56,6 +56,9 @@ func (u *XDG_Base) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage)
 		}
 
 		return nil
+	case 3:
+		// this is a pong...
+		return nil
 
 	default:
 		return fmt.Errorf("unknown opcode called on xdg: %v", packet.Opcode)

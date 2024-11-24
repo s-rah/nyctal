@@ -34,6 +34,23 @@ func (u *Surface) Destroy() {
 	u.cached = nil
 }
 
+func (u *Surface) RenderBuffer() {
+	// Committing a pending wl_buffer allows the compositor to read the
+	// pixels in the wl_buffer. The compositor may access the pixels at
+	// any time after the wl_surface.commit request. When the compositor
+	// will not access the pixels anymore, it will send the
+	// wl_buffer.release event. Only after receiving wl_buffer.release,
+	// the client may reuse the wl_buffer. A wl_buffer that has been
+	// attached and then replaced by another attach instead of committed
+	// will not receive a release event, and is not used by the
+	// compositor.
+	if u.pending != nil {
+		u.read_buffer()
+		u.pending.Destroy()
+		u.pending = nil
+	}
+}
+
 func (u *Surface) read_buffer() *model.BGRA {
 
 	if u.pending != nil && u.pending.format == model.FormatARGB {
@@ -187,19 +204,6 @@ func (u *Surface) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage) 
 		// received create pool message...
 		if u.pending != nil {
 
-			// Committing a pending wl_buffer allows the compositor to read the
-			// pixels in the wl_buffer. The compositor may access the pixels at
-			// any time after the wl_surface.commit request. When the compositor
-			// will not access the pixels anymore, it will send the
-			// wl_buffer.release event. Only after receiving wl_buffer.release,
-			// the client may reuse the wl_buffer. A wl_buffer that has been
-			// attached and then replaced by another attach instead of committed
-			// will not receive a release event, and is not used by the
-			// compositor.
-			u.read_buffer()
-
-			u.pending.Destroy()
-
 		} else if u.attached {
 			// If wl_surface.attach is sent with a NULL wl_buffer, the
 			// following wl_surface.commit will remove the surface content.
@@ -208,7 +212,6 @@ func (u *Surface) HandleMessage(wsc *WaylandServerConn, packet *WaylandMessage) 
 
 		// After commit, there is no pending buffer until the next attach.
 		u.attached = false
-		u.pending = nil
 
 		utils.Debug(int(wsc.id), fmt.Sprintf("surface#%d", u.id), "commit")
 

@@ -106,11 +106,20 @@ func (ws *WaylandServer) handle(wsc *WaylandServerConn) {
 					continue
 				}
 			}
+			if strings.Contains(err.Error(), "interrupted system call") && wsc.errors < 10 {
+				if wsc.pingtarget != nil {
+					wsc.pingtarget.Ping()
+					wsc.errors += 1
+					continue
+				}
+			}
 			break
 		} else {
 			utils.Debug(int(wsc.id), "wayland-message", fmt.Sprintf("%d %v", wsc.id, packet))
 		}
 
+		// sucessfully received a message, so reset error tracking...
+		wsc.errors = 0
 		if obj, err := wsc.registry.Get(uint32(packet.Address)); err == nil {
 			if err := obj.HandleMessage(wsc, packet); err != nil {
 				utils.Debug(int(wsc.id), "client", err.Error())

@@ -66,6 +66,7 @@ func (wc *WaylandClient) RemoveChildren(id int) {
 
 func (wc *WaylandClient) Subsurfaces(subsurface *SubSurface, wg image.Point, buffer *model.BGRA, width int, height int) {
 	//utils.Debug("client", fmt.Sprintf("drawing subsurface: %d %v", i, subsurface.id))
+	subsurface.surface.RenderBuffer()
 	pimg := subsurface.surface.cached
 	if pimg != nil {
 		offset := subsurface.position.Add(wg)
@@ -90,6 +91,7 @@ func (wc *WaylandClient) Buffer(buffer *model.BGRA, width int, height int) {
 	wc.Resize(width, height)
 	utils.Debug(int(wc.wsc.id), "client", "ongoing...")
 	wl_surface := wc.surface.surface
+	wl_surface.RenderBuffer()
 	img := wl_surface.cached
 	if img != nil {
 		wg := wc.surface.windowGeometry

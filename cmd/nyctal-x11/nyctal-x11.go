@@ -202,43 +202,40 @@ func main() {
 	//wspace.ProcessFocus()
 
 	utils.Debug(0, "nyctal", "Starting nyctal-x11...\n")
-	lastFrame := time.Now()
+	startFrame := time.Now()
 	// this is the minifb loop
+	frames := 0
 
 	for C.mfb_wait_sync(window) {
 
-		// time check is here to prevent spamming the workspace render buffer (which may attempt to e.g. reconfigure windwows)
-		// there is no point in attempting to generate frames any faster than 200fps
-		// todo: in the future we should replace this with a NeedsRender() check
-		if time.Since(lastFrame) >= time.Millisecond*20 {
-			// // // this will be set to false if the esc key is pressed
-			// if ws, ok := wspace.(*workspace.Workspace); ok {
-			// 	if ws.Quit {
-			// 		fmt.Printf("closing...%v\n", time.Now())
-			// 		C.mfb_close(window)
-			// 		break
-			// 	}
-			// }
-			img := model.EmptyBGRA(image.Rect(0, 0, WIDTH, HEIGHT))
-			wspace.Buffer(img, WIDTH, HEIGHT)
-			bounds := img.Bounds()
-			w, h := bounds.Max.X, bounds.Max.Y
-			if w*h*4 == buffer_len {
-				pixels := unsafe.Slice((*C.uint)(buffer), w*h)
-				for j := 0; j < h; j++ {
-					for i := 0; i < w; i++ {
-						pixels[(w*j)+i] = value(img.AtRaw(i, j))
-					}
-				}
-
-				// minifb stuff
-				state := C.mfb_update_ex(window, unsafe.Pointer(buffer), C.uint(w), C.uint(h))
-				if state < 0 {
-					break
+		// // // this will be set to false if the esc key is pressed
+		// if ws, ok := wspace.(*workspace.Workspace); ok {
+		// 	if ws.Quit {
+		// 		fmt.Printf("closing...%v\n", time.Now())
+		// 		C.mfb_close(window)
+		// 		break
+		// 	}
+		// }
+		img := model.EmptyBGRA(image.Rect(0, 0, WIDTH, HEIGHT))
+		wspace.Buffer(img, WIDTH, HEIGHT)
+		bounds := img.Bounds()
+		w, h := bounds.Max.X, bounds.Max.Y
+		if w*h*4 == buffer_len {
+			pixels := unsafe.Slice((*C.uint)(buffer), w*h)
+			for j := 0; j < h; j++ {
+				for i := 0; i < w; i++ {
+					pixels[(w*j)+i] = value(img.AtRaw(i, j))
 				}
 			}
 
-			lastFrame = time.Now()
+			// minifb stuff
+			state := C.mfb_update_ex(window, unsafe.Pointer(buffer), C.uint(w), C.uint(h))
+			if state < 0 {
+				break
+			}
 		}
+		fmt.Printf("FPS: %v\n", float64(frames)/float64(time.Since(startFrame).Seconds()))
+		frames += 1
+
 	}
 }

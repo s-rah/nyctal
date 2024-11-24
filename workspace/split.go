@@ -30,7 +30,6 @@ func (p *SplitPanel) AddTopLevel(window model.TopLevelWindow) {
 	p.focusSplit.AddTopLevel(window)
 }
 
-// TODO make work...
 func (p *SplitPanel) GetTopLevel(idx model.GlobalIdx) model.TopLevelWindow {
 	p.lock.Lock()
 	defer p.lock.Unlock()
@@ -116,8 +115,8 @@ func (p *SplitPanel) ProcessKeyboardEvent(pointer model.Pointer, kb model.Keyboa
 
 	} else {
 		downKeys := kb.DownKeys()
-		// ctrl-alt-v
-		if downKeys[model.KB_CTRL] && downKeys[model.KB_ALT] && downKeys[47] {
+
+		if downKeys[model.KB_CTRL] && downKeys[model.KB_ALT] && downKeys[47] { // ctrl-alt-v
 			utils.Debug(0, "splitpanel", "splitting vertically")
 			p.activeSplit = true
 			p.splitAt = 0.5
@@ -125,7 +124,7 @@ func (p *SplitPanel) ProcessKeyboardEvent(pointer model.Pointer, kb model.Keyboa
 			p.first = NewSplitPanel(prev, p.do)
 			p.second = NewSplitPanel(NewWindowPanel(p.do), p.do)
 			p.splitHorizontal = false
-		} else if downKeys[model.KB_CTRL] && downKeys[model.KB_ALT] && downKeys[35] {
+		} else if downKeys[model.KB_CTRL] && downKeys[model.KB_ALT] && downKeys[35] { // ctrl-alt-h
 			utils.Debug(0, "splitpanel", "splitting horizontally")
 			p.activeSplit = true
 			p.splitAt = 0.5

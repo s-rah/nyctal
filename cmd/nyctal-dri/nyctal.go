@@ -31,16 +31,16 @@ func SetupMouse(workspace model.Workspace) func() error {
 		} else {
 			go func() {
 				err := dev.ScanInput(context.Background())
-				utils.Debug("input handler", fmt.Sprintf("failed to scan input: %v", err))
+				utils.Debug(0, "input handler", fmt.Sprintf("failed to scan input: %v", err))
 			}()
 			go func() {
-				utils.Debug("mouse handler", "starting input handler")
+				utils.Debug(0, "mouse handler", "starting input handler")
 				localX := float32(0.0)
 				localY := float32(0.0)
 				for {
 					//	utils.Debug("input handler", "waiting...")
 					ev := <-dev.Input
-					utils.Debug("mouse handler", fmt.Sprintf("type %d code %d", ev.Type, ev.Code))
+					utils.Debug(0, "mouse handler", fmt.Sprintf("type %d code %d", ev.Type, ev.Code))
 					switch ev.Type {
 					case evdev.EvKey:
 						pev := model.PointerEvent{
@@ -87,7 +87,7 @@ func SetupMouse(workspace model.Workspace) func() error {
 		}
 
 	} else {
-		utils.Debug("input handler", "coult not find mouse device")
+		utils.Debug(0, "input handler", "coult not find mouse device")
 	}
 	return func() error { return nil }
 }
@@ -103,15 +103,15 @@ func SetupInput(workspace model.Workspace) func() error {
 		} else {
 			go func() {
 				err := dev.ScanInput(context.Background())
-				utils.Debug("input handler", fmt.Sprintf("failed to scan input: %v", err))
+				utils.Debug(0, "input handler", fmt.Sprintf("failed to scan input: %v", err))
 			}()
 			go func() {
-				utils.Debug("input handler", "starting input handler")
+				utils.Debug(0, "input handler", "starting input handler")
 
 				for {
 					//	utils.Debug("input handler", "waiting...")
 					ev := <-dev.Input
-					utils.Debug("input handler", fmt.Sprintf("type %d code %d value: %d", ev.Type, ev.Code, ev.Value))
+					utils.Debug(0, "input handler", fmt.Sprintf("type %d code %d value: %d", ev.Type, ev.Code, ev.Value))
 					kev := model.KeyboardEvent{Time: uint32(time.Now().UnixMilli()), Key: uint32(ev.Code), State: uint32(ev.Value)}
 					KEYBOARD.ProcessKeyboardEvent(kev)
 					workspace.ProcessKeyboardEvent(POINTER, *KEYBOARD, kev)
@@ -138,7 +138,7 @@ func main() {
 		output = rm
 		width, height = rm.Stats()
 		wspace = workspace.NewDragOverlay()
-		utils.Debug("ori", fmt.Sprintf("dri established %v %v", width, height))
+		utils.Debug(0, "nyctal", fmt.Sprintf("dri established %v %v", width, height))
 	}
 
 	// reset UDS

@@ -82,9 +82,6 @@ func (i *BGRA) Update(pixels []byte, damage image.Rectangle, stride int) {
 
 		copy(i.Pix[damageStart:damageEnd], pixels[damageStart:damageEnd])
 	}
-	//pixelLen := i.Rect.Dy() * stride
-	//copy(i.Pix[0:pixelLen], pixels[0:pixelLen])
-
 }
 
 func (i *BGRA) SubImage(bounds image.Rectangle) *BGRA {

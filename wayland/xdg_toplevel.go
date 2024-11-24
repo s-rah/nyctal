@@ -56,12 +56,11 @@ func (u *XDG_Toplevel) HandleMessage(wsc *WaylandServerConn, packet *WaylandMess
 	case 5:
 		return nil
 	case 6:
-		return nil // move?
+		return nil
 	case 7:
 		return nil
 	case 8:
 		return nil
-
 	case 9:
 		// maxiimize ignore
 		return nil
